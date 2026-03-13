@@ -10,6 +10,9 @@
 #include <QTimer>
 #include <QAbstractSocket>
 
+#include <QCryptographicHash>
+#include <QRandomGenerator>
+
 #include <QtSql>
 #include <QtSql/QSqlDatabase>
 #include <QSqlDatabase>
@@ -31,14 +34,22 @@ public:
     ~Connections();
     uint32_t sendTestData(QString Data);
 
-private:
+private: //variables
     QSslSocket *tcpSocket;
     quint64 socketId;
     QByteArray m_buffer;
-    QTimer *connectionTimeout,*queueTimer,*sendTimeout;
+    QList<QByteArray> inputBuffers;
+    QTimer *connectionTimeout,*queueTimer,*sendTimeout,*inputProcess;
     QSqlDatabase *messengerDB;
     QMap<uint32_t,Equipment*> equipments;
+    QMap<uint32_t,Session*> sessions;
     QList<QByteArray> sendQueue;
+
+private: //functions
+    QString generateSessionToken(void);
+    bool logingIn(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);
+    bool sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);
+
 
 private slots:
     void readyRead(void);
@@ -50,6 +61,8 @@ private slots:
     void onSendTimeout(void);
     void onBytesWrited(qint64 _bytes);
     void onEquipmentDisconnected(uint32_t _equipmentID);
+    void inputProcessTimeout(void);
+    void onSessionTerminated(uint32_t _sessionId);
 
 signals:
     void connectionDisconnected(quint64 _socketId);

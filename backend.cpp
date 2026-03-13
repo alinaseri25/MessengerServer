@@ -17,6 +17,20 @@ backend::backend(QObject *parent)
     networkThread->start();
 }
 
+backend::~backend()
+{
+    if(networkThread != nullptr)
+    {
+        networkThread->quit();
+        networkThread->wait();
+        networkThread->deleteLater();
+    }
+    if(curServer != nullptr)
+    {
+        curServer->deleteLater();
+    }
+}
+
 void backend::onSocketsCountChanged(bool _state, QString _serverMsg, quint64 _SocketCount, bool _dbState, QString _dbMsg)
 {
     serverState = _state;

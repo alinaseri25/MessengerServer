@@ -4,6 +4,11 @@ project(MessengerServer VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(OPENSSL_ROOT_DIR    "C:/vcpkg/packages/openssl_x64-mingw-dynamic")
+set(OPENSSL_INCLUDE_DIR "C:/vcpkg/packages/openssl_x64-mingw-dynamic/include")
+set(OPENSSL_CRYPTO_LIBRARY "C:/vcpkg/packages/openssl_x64-mingw-dynamic/lib/libcrypto.dll.a")
+set(OPENSSL_SSL_LIBRARY    "C:/vcpkg/packages/openssl_x64-mingw-dynamic/lib/libssl.dll.a")
+
 find_package(Qt6 REQUIRED COMPONENTS Quick Network Sql)
 find_package(OpenSSL REQUIRED)
 

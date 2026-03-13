@@ -10,6 +10,7 @@ class backend : public QObject
     Q_OBJECT
 public:
     explicit backend(QObject *parent = nullptr);
+    ~backend();
 
 private:
     server *curServer;

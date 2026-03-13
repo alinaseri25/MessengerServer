@@ -40,7 +40,7 @@ bool server::loadTlsCredentials(const QString &certPath, const QString &keyPath)
         TlsCertificateGenerator::generate(
             "server.crt",
             "server.key",
-            "192.168.1.103"
+            "192.168.1.100"
             );
     }
 
@@ -145,6 +145,7 @@ bool server::createconnection()
     messengerDB->setUserName("root");
     messengerDB->setPassword("ABCabc.123$%^");
     messengerDB->setDatabaseName("messengerdb");
+    messengerDB->setConnectOptions("CLIENT_MULTI_RESULTS=1;MYSQL_OPT_RECONNECT=1");
 
     if (messengerDB->open()) {
         qDebug() << "DB Connection OK!";

@@ -26,6 +26,11 @@ Connections::Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase
     connect(sendTimeout,&QTimer::timeout,this,&Connections::onSendTimeout);
     sendTimeout->stop();
 
+    inputProcess = new QTimer(this);
+    connect(inputProcess,&QTimer::timeout,this,&Connections::inputProcessTimeout);
+    inputProcess->setInterval(1);
+    inputProcess->start();
+
     sendTestData(QString("Socket ID : %1").arg(socketId));
 }
 
@@ -52,9 +57,133 @@ uint32_t Connections::sendTestData(QString Data)
     return writeData(doc);
 }
 
+QString Connections::generateSessionToken()
+{
+    QByteArray randomBytes(32, Qt::Uninitialized);
+    QRandomGenerator::securelySeeded().fillRange(
+        reinterpret_cast<quint32*>(randomBytes.data()), 8
+        );
+    return QString::fromLatin1(
+        QCryptographicHash::hash(randomBytes, QCryptographicHash::Sha256).toHex()
+        );
+}
+
+bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
+{
+    QJsonObject jsonObject = jsonDoc->object();
+    QJsonObject responseObject;
+    responseObject.insert(QString("type"),QString("loginResponse"));
+    uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
+    if(!equipments.contains(_deviceId))
+    {
+        responseObject.insert(QString("status"),States::nok);
+        responseObject.insert(QString("error"),Errors::deviceExpired);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+        return false;
+    }
+    else
+    {
+        QString username = jsonObject.value(QString("username")).toString("");
+        QString hashedPassword = jsonObject.value(QString("password")).toString("");
+
+        Entity *entity = new Entity(username,messengerDB);
+        connect(entity,&Entity::requestWriteData,this,&Connections::writeData);
+
+        if(!entity->loginEntity(hashedPassword))
+        {
+            entity->deleteLater();
+            return false;
+        }
+
+        QString userAgent = jsonObject.value(QString("userAgent")).toString("TestAgent");
+
+        Session *session = new Session(messengerDB,entity,equipments.value(_deviceId),tcpSocket->peerAddress().toString(),userAgent,this);
+        if(session->loginSession())
+        {
+            if(sessions.contains(session->getSessionId()))
+            {
+                sessions.value(session->getSessionId())->deleteLater();
+                sessions.remove(session->getSessionId());
+            }
+            sessions.insert(session->getSessionId(),session);
+            responseObject.insert(QString("status"),States::ok);
+            responseObject.insert(QString("sessionId"),(qint32)(session->getSessionId()));
+            responseObject.insert(QString("entityId"),(qint32)(session->getEntity()->getEntityId()));
+            responseObject.insert(QString("sessionTocken"),session->getSessionToken());
+            responseObject.insert(QString("displayName"),session->getEntity()->getDisplayName());
+            responseObject.insert(QString("username"),session->getEntity()->getUsername());
+            QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+            writeData(responseDocument);
+        }
+        else
+        {
+            session->deleteLater();
+        }
+    }
+    return true;
+}
+
+bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
+{
+    QJsonObject jsonObject = jsonDoc->object();
+    QJsonObject responseObject;
+    responseObject.insert(QString("type"),QString("sessionResponse"));
+    uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
+    if(!equipments.contains(_deviceId))
+    {
+        responseObject.insert(QString("status"),States::nok);
+        responseObject.insert(QString("error"),Errors::deviceExpired);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+        return false;
+    }
+    QString username = QString("");
+    Entity *entity = new Entity(username,messengerDB);
+    connect(entity,&Entity::requestWriteData,this,&Connections::writeData);
+
+    uint32_t entityId = jsonObject.value(QString("entityId")).toInt(0);
+
+    if(!entity->checkExist(entityId))
+    {
+        entity->deleteLater();
+        return false;
+    }
+
+    QString userAgent = jsonObject.value(QString("userAgent")).toString("TestAgent");
+
+    Session *session = new Session(messengerDB,entity,equipments.value(_deviceId),tcpSocket->peerAddress().toString(),userAgent,this);
+    uint32_t sessionId = jsonObject.value(QString("sessionId")).toInt(0);
+    QString sessionTocken = jsonObject.value(QString("sessionTocken")).toString("");
+    if(session->checkSession(sessionId,sessionTocken))
+    {
+        if(sessions.contains(session->getSessionId()))
+        {
+            sessions.value(session->getSessionId())->deleteLater();
+            sessions.remove(session->getSessionId());
+        }
+        sessions.insert(session->getSessionId(),session);
+        responseObject.insert(QString("status"),States::ok);
+        responseObject.insert(QString("sessionId"),(qint32)(session->getSessionId()));
+        responseObject.insert(QString("entityId"),(qint32)(session->getEntity()->getEntityId()));
+        responseObject.insert(QString("sessionTocken"),session->getSessionToken());
+        responseObject.insert(QString("displayName"),session->getEntity()->getDisplayName());
+        responseObject.insert(QString("username"),session->getEntity()->getUsername());
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+    }
+    else
+    {
+        session->deleteLater();
+    }
+
+    return true;
+}
+
 uint32_t Connections::writeData(QJsonDocument *jsonDoc, QByteArray *payload)
 {
-    QByteArray data,jsonByteArray = jsonDoc->toJson();
+    QByteArray data,jsonByteArray = jsonDoc->toJson(QJsonDocument::Compact);
+    delete jsonDoc;
     DataHeader dataHeader;
     dataHeader.jsonSize = jsonByteArray.size();
     if(payload != nullptr)
@@ -70,6 +199,7 @@ uint32_t Connections::writeData(QJsonDocument *jsonDoc, QByteArray *payload)
     if(payload != nullptr)
     {
         data.append(*payload);
+        delete payload;
     }
     sendQueue.append(data);
     queueTimer->start();
@@ -82,7 +212,7 @@ void Connections::onQueueTimerTimeout()
     {
         if(tcpSocket != nullptr)
         {
-            qDebug() << QString("Start To Send");
+            // qDebug() << QString("Start To Send");
             tcpSocket->write(sendQueue.at(0));
             queueTimer->stop();
             sendTimeout->start(1000);
@@ -121,12 +251,98 @@ void Connections::onBytesWrited(qint64 _bytes)
 
 void Connections::onEquipmentDisconnected(uint32_t _equipmentID)
 {
-    equipments.remove(_equipmentID);
+    if(equipments.contains(_equipmentID))
+    {
+        equipments.remove(_equipmentID);
+    }
+}
+
+void Connections::inputProcessTimeout()
+{
+    if(inputBuffers.size() == 0)
+    {
+        return;
+    }
+    inputProcess->stop();
+    const DataHeader *header = (DataHeader *)(inputBuffers.at(0).constData());
+
+    // ── استخراج JSON ──────────────────────────────────────────────
+    QByteArray jsonBytes = inputBuffers.at(0).mid(sizeof(DataHeader), header->jsonSize);
+
+    // ── استخراج Payload ───────────────────────────────────────────
+    QByteArray payloadBytes;
+    if (header->payloadSize > 0)
+        payloadBytes = inputBuffers.at(0).mid(sizeof(DataHeader) + header->jsonSize, header->payloadSize);
+
+
+    // ── پارس JSON ────────────────────────────────────────────────
+    QJsonParseError parseError;
+    QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes, &parseError);
+
+    if (parseError.error != QJsonParseError::NoError) {
+        qWarning() << "[ERROR] JSON parse failed:"
+                   << parseError.errorString();
+        qWarning() << "[ERROR] Raw JSON:" << jsonBytes;
+        inputBuffers.remove(0);
+        inputProcess->start();
+        return;
+    }
+
+    qDebug() << "[RX] JSON:" << jsonBytes;
+    connectionTimeout->start(connectionTime);
+
+    // ── dispatch بر اساس type ─────────────────────────────────────
+    QJsonObject jsonObject = jsonDoc.object();
+    QString commandType = jsonObject.value("type").toString("");
+    if(commandType == QString("handshake"))
+    {
+        Equipment *eqp = new Equipment(messengerDB,connectionTime,this);
+        connect(eqp,&Equipment::requestWriteData,this,&Connections::writeData);
+        if(eqp->handShake(&jsonDoc,&payloadBytes))
+        {
+            if(equipments.contains(eqp->getEquipmentID()))
+            {
+                equipments.value(eqp->getEquipmentID())->deleteLater();
+                equipments.remove(eqp->getEquipmentID());
+            }
+            equipments.insert(eqp->getEquipmentID(),eqp);
+        }
+        else
+        {
+            qDebug() << QString("Error Happend - cannot add new equipments");
+        }
+    }
+    else if(commandType == QString("keepAlive"))
+    {
+        uint32_t _deviceId = jsonObject.value("deviceId").toInt(0);
+        if(equipments.contains(_deviceId))
+        {
+            equipments.value(_deviceId)->keepAlive(&jsonDoc,&payloadBytes);
+        }
+    }
+    else if(commandType == QString("loginRequest"))
+    {
+        logingIn(&jsonDoc,&payloadBytes);
+    }
+    else if(commandType == QString("sessionRequest"))
+    {
+        sessionRequest(&jsonDoc,&payloadBytes);
+    }
+
+    inputBuffers.remove(0);
+    inputProcess->start();
+}
+
+void Connections::onSessionTerminated(uint32_t _sessionId)
+{
+    if(sessions.contains(_sessionId))
+    {
+        sessions.remove(_sessionId);
+    }
 }
 
 void Connections::readyRead()
 {
-    connectionTimeout->start(connectionTime);
     // ── داده جدید رو به بافر اضافه کن ────────────────────────────────
     m_buffer.append(tcpSocket->readAll());
 
@@ -160,51 +376,15 @@ void Connections::readyRead()
         if (m_buffer.size() < totalExpected)
             break;
 
-        // ── استخراج JSON ──────────────────────────────────────────────
-        QByteArray jsonBytes = m_buffer.mid(sizeof(DataHeader), header->jsonSize);
-
-        // ── استخراج Payload ───────────────────────────────────────────
-        QByteArray payloadBytes;
-        if (header->payloadSize > 0)
-            payloadBytes = m_buffer.mid(sizeof(DataHeader) + header->jsonSize, header->payloadSize);
+        inputBuffers.append(m_buffer);
+        if(inputBuffers.size() > 100)
+        {
+            qDebug() << QString("Connection buffer over flow!");
+            emit connectionDisconnected(socketId);
+        }
 
         // ── مصرف این پکت از بافر ─────────────────────────────────────
         m_buffer.remove(0, totalExpected);
-
-        // ── پارس JSON ────────────────────────────────────────────────
-        QJsonParseError parseError;
-        QJsonDocument jsonDoc = QJsonDocument::fromJson(jsonBytes, &parseError);
-
-        if (parseError.error != QJsonParseError::NoError) {
-            qWarning() << "[ERROR] JSON parse failed:"
-                       << parseError.errorString();
-            qWarning() << "[ERROR] Raw JSON:" << jsonBytes;
-            continue;
-        }
-
-        qDebug() << "[RX] JSON:" << jsonBytes;
-
-        // ── dispatch بر اساس type ─────────────────────────────────────
-        QJsonObject jsonObject = jsonDoc.object();
-        if(jsonObject.value("type").toString("") == QString("handshake"))
-        {
-            Equipment *eqp = new Equipment(messengerDB,connectionTime,this);
-            connect(eqp,&Equipment::requestWriteData,this,&Connections::writeData);
-            if(eqp->processPacket(&jsonDoc,&payloadBytes))
-            {
-                equipments.insert(eqp->getEquipmentID(),eqp);
-                qDebug() << QString("equipments size : %1 -- equipments last key : %2").arg(equipments.size()).arg(eqp->getEquipmentID());
-            }
-            else
-            {
-                qDebug() << QString("Error Happend - cannot add new equipments");
-            }
-        }
-        else if(jsonObject.value("type").toString("") == QString("keepAlive"))
-        {
-            uint32_t _deviceId = jsonObject.value("deviceId").toInt(0);
-            equipments.value(_deviceId)->processPacket(&jsonDoc,&payloadBytes);
-        }
 
         return;
     }
