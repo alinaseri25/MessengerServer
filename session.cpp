@@ -181,6 +181,79 @@ bool Session::loginSession()
     return isValid;
 }
 
+bool Session::logoutSession()
+{
+    QJsonObject responseObject;
+    responseObject.insert(QString("type"), QString("logoutResponse"));
+
+    auto emitError = [&]() {
+        responseObject.insert(QString("status"), States::nok);
+        responseObject.insert(QString("error"), Errors::sessionExpired);
+        isValid = false;
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        emit requestWriteData(responseDocument);
+    };
+
+    if(entity == nullptr || equipment == nullptr)
+    {
+        emitError();
+        return false;
+    }
+
+    if (!messengerDB->transaction()) {
+        emitError();
+        return false;
+    }
+
+    QSqlQuery query(*messengerDB);
+
+    // ---------------------------------------------------
+    // مرحله ۱: چک وجود رکورد
+    // ---------------------------------------------------
+    query.prepare(
+        "SELECT session_id, expires_at "
+        "FROM sessions "
+        "WHERE session_id = :session_id AND session_token = :session_token"
+        );
+    query.bindValue(":session_id",    sessionId);
+    query.bindValue(":session_token", sessionToken);
+
+    if (!query.exec()) {
+        messengerDB->rollback();
+        emitError();
+        return false;
+    }
+
+    bool recordExists = query.next();
+
+    if (recordExists) {
+        QDateTime newExpiresAt  = QDateTime::currentDateTimeUtc();
+        query.prepare(
+            "UPDATE sessions SET "
+            "    expires_at       = :expires_at "
+            "WHERE session_id = :session_id"
+            );
+        query.bindValue(":expires_at",    newExpiresAt);
+        query.bindValue(":session_id",    sessionId);
+    }
+    else
+    {
+        messengerDB->rollback();
+        emitError();
+        return false;
+    }
+
+    if (!query.exec()) {
+        messengerDB->rollback();
+        emitError();
+        return false;
+    }
+
+    messengerDB->commit();
+
+    return true;
+}
+
 bool Session::checkSession(uint32_t _sessionId, QString _sessionToken)
 {
     sessionId = _sessionId;

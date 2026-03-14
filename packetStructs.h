@@ -20,7 +20,8 @@ enum Errors{
     deviceExpired = 0x01,
     badLoginInput       ,
     userOrPassError     ,
-    sessionMakerError
+    sessionMakerError   ,
+    sessionExpired
 };
 
 enum States{

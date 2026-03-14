@@ -72,14 +72,17 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
 {
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
+    auto emitError = [&]() {
+        responseObject.insert(QString("status"), States::nok);
+        responseObject.insert(QString("error"), Errors::deviceExpired);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+    };
     responseObject.insert(QString("type"),QString("loginResponse"));
     uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
     if(!equipments.contains(_deviceId))
     {
-        responseObject.insert(QString("status"),States::nok);
-        responseObject.insert(QString("error"),Errors::deviceExpired);
-        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-        writeData(responseDocument);
+        emit emitError();
         return false;
     }
     else
@@ -128,14 +131,17 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
 {
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
+    auto emitError = [&]() {
+        responseObject.insert(QString("status"), States::nok);
+        responseObject.insert(QString("error"), Errors::deviceExpired);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+    };
     responseObject.insert(QString("type"),QString("sessionResponse"));
     uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
     if(!equipments.contains(_deviceId))
     {
-        responseObject.insert(QString("status"),States::nok);
-        responseObject.insert(QString("error"),Errors::deviceExpired);
-        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-        writeData(responseDocument);
+        emit emitError();
         return false;
     }
     QString username = QString("");
@@ -177,6 +183,50 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
         session->deleteLater();
     }
 
+    return true;
+}
+
+bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
+{
+    QJsonObject jsonObject = jsonDoc->object();
+    QJsonObject responseObject;
+    responseObject.insert(QString("type"), QString("logoutResponse"));
+
+    auto emitError = [&]() {
+        responseObject.insert(QString("status"), States::nok);
+        responseObject.insert(QString("error"), Errors::sessionExpired);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        writeData(responseDocument);
+    };
+
+    uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
+    if(!equipments.contains(_deviceId))
+    {
+        emit emitError();
+        return false;
+    }
+    uint32_t _sessionId = jsonObject.value(QString("sessionId")).toInt(0);
+    QString _sessionTocken = jsonObject.value(QString("sessionTocken")).toString("");
+    if(!sessions.contains(_sessionId))
+    {
+        emit emitError();
+        return false;
+    }
+    Session *_session = sessions.value(_sessionId);
+    if(_session->getSessionToken() != _sessionTocken)
+    {
+        emit emitError();
+        sessions.remove(_sessionId);
+        _session->deleteLater();
+        return false;
+    }
+    _session->logoutSession();
+    sessions.remove(_sessionId);
+    _session->deleteLater();
+    responseObject.insert(QString("status"),States::ok);
+    responseObject.insert(QString("sessionId"),(qint32)_sessionId);
+    QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+    writeData(responseDocument);
     return true;
 }
 
@@ -327,6 +377,10 @@ void Connections::inputProcessTimeout()
     else if(commandType == QString("sessionRequest"))
     {
         sessionRequest(&jsonDoc,&payloadBytes);
+    }
+    else if(commandType == QString("logoutRequest"))
+    {
+        logoutSession(&jsonDoc,&payloadBytes);
     }
 
     inputBuffers.remove(0);

@@ -21,6 +21,7 @@ public:
     explicit Session(QSqlDatabase *_messengerDB,Entity *_entity,Equipment *_equipment,QString _ipAddress,QString _userAgent,QObject *parent = nullptr);
     ~Session();
     bool loginSession(void);
+    bool logoutSession(void);
     bool checkSession(uint32_t _sessionId,QString _sessionToken);
     bool sessionIsValid(void);
     uint32_t getSessionId(void);

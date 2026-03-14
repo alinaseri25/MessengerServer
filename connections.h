@@ -49,6 +49,7 @@ private: //functions
     QString generateSessionToken(void);
     bool logingIn(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);
     bool sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);
+    bool logoutSession(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);
 
 
 private slots:
