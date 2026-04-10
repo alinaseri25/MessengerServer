@@ -51,7 +51,7 @@ private:
     QString dbMessege;
     QString serverMsg;
 
-    TlsTcpServer *serverObj;
+    TlsTcpServer *serverObj = nullptr;
     QMap<quint64, Connections*> connectionsList;
     QSqlDatabase *messengerDB = nullptr;
 

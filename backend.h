@@ -13,9 +13,9 @@ public:
     ~backend();
 
 private:
-    server *curServer;
+    server *curServer = nullptr;
     bool serverState = false;
-    QThread *networkThread;
+    QThread *networkThread = nullptr;
 
 signals:
     void serverStateChanged(bool state,QString msg);

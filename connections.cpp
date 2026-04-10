@@ -37,7 +37,10 @@ Connections::Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase
 Connections::~Connections()
 {
     foreach (Equipment *eqp, equipments.values()) {
-        eqp->disconnectEquipment();
+        if(eqp != nullptr)
+        {
+            eqp->disconnectEquipment();
+        }
     }
 
     if(tcpSocket->isOpen())
@@ -45,15 +48,16 @@ Connections::~Connections()
         tcpSocket->close();
     }
     tcpSocket->deleteLater();
+    tcpSocket = nullptr;
 }
 
 uint32_t Connections::sendTestData(QString Data)
 {
-    QJsonObject *tempObject = new QJsonObject();
-    tempObject->insert("type","RAW Data");
-    tempObject->insert("value",Data);
-    tempObject->insert("jsonVersion","00.00.01");
-    QJsonDocument *doc = new QJsonDocument(*tempObject);
+    QJsonObject tempObject;
+    tempObject.insert("type",Response);
+    tempObject.insert("value",Data);
+    tempObject.insert("jsonVersion","00.00.01");
+    QJsonDocument *doc = new QJsonDocument(tempObject);
     return writeData(doc);
 }
 
@@ -70,6 +74,10 @@ QString Connections::generateSessionToken()
 
 bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
 {
+    if(!jsonDoc)
+    {
+        return false;
+    }
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
     auto emitError = [&]() {
@@ -78,7 +86,7 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
         QJsonDocument *responseDocument = new QJsonDocument(responseObject);
         writeData(responseDocument);
     };
-    responseObject.insert(QString("type"),QString("loginResponse"));
+    responseObject.insert(QString("type"),LoginResponse);//QString("loginResponse")
     uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
     if(!equipments.contains(_deviceId))
     {
@@ -96,6 +104,7 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
         if(!entity->loginEntity(hashedPassword))
         {
             entity->deleteLater();
+            entity = nullptr;
             return false;
         }
 
@@ -122,6 +131,7 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
         else
         {
             session->deleteLater();
+            session = nullptr;
         }
     }
     return true;
@@ -129,6 +139,10 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
 
 bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
 {
+    if(!jsonDoc)
+    {
+        return false;
+    }
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
     auto emitError = [&]() {
@@ -137,7 +151,7 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
         QJsonDocument *responseDocument = new QJsonDocument(responseObject);
         writeData(responseDocument);
     };
-    responseObject.insert(QString("type"),QString("sessionResponse"));
+    responseObject.insert(QString("type"),SessionResponse);//QString("sessionResponse")
     uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
     if(!equipments.contains(_deviceId))
     {
@@ -181,6 +195,7 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
     else
     {
         session->deleteLater();
+        session = nullptr;
     }
 
     return true;
@@ -190,7 +205,7 @@ bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
 {
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
-    responseObject.insert(QString("type"), QString("logoutResponse"));
+    responseObject.insert(QString("type"), LogoutResponse);//QString("logoutResponse")
 
     auto emitError = [&]() {
         responseObject.insert(QString("status"), States::nok);
@@ -218,11 +233,13 @@ bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
         emit emitError();
         sessions.remove(_sessionId);
         _session->deleteLater();
+        _session = nullptr;
         return false;
     }
     _session->logoutSession();
     sessions.remove(_sessionId);
     _session->deleteLater();
+    _session = nullptr;
     responseObject.insert(QString("status"),States::ok);
     responseObject.insert(QString("sessionId"),(qint32)_sessionId);
     QJsonDocument *responseDocument = new QJsonDocument(responseObject);
@@ -232,8 +249,13 @@ bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
 
 uint32_t Connections::writeData(QJsonDocument *jsonDoc, QByteArray *payload)
 {
+    if(!jsonDoc)
+    {
+        return 0;
+    }
     QByteArray data,jsonByteArray = jsonDoc->toJson(QJsonDocument::Compact);
     delete jsonDoc;
+    jsonDoc = nullptr;
     DataHeader dataHeader;
     dataHeader.jsonSize = jsonByteArray.size();
     if(payload != nullptr)
@@ -250,6 +272,7 @@ uint32_t Connections::writeData(QJsonDocument *jsonDoc, QByteArray *payload)
     {
         data.append(*payload);
         delete payload;
+        payload = nullptr;
     }
     sendQueue.append(data);
     queueTimer->start();
@@ -272,10 +295,11 @@ void Connections::onQueueTimerTimeout()
 
 void Connections::onConnectionTimeout()
 {
-    qDebug() << QString("Connection Time Over");
+    qDebug() << QString("Connection Time Over Start");
+    emit connectionDisconnected(socketId);
     tcpSocket->disconnect();
     tcpSocket->close();
-    emit connectionDisconnected(socketId);
+    qDebug() << QString("Connection Time Over End");
 }
 
 void Connections::onSendTimeout()
@@ -343,8 +367,8 @@ void Connections::inputProcessTimeout()
 
     // ── dispatch بر اساس type ─────────────────────────────────────
     QJsonObject jsonObject = jsonDoc.object();
-    QString commandType = jsonObject.value("type").toString("");
-    if(commandType == QString("handshake"))
+    uint16_t commandType = jsonObject.value("type").toInt(0);
+    if(commandType == Handshake)//QString("handshake")
     {
         Equipment *eqp = new Equipment(messengerDB,connectionTime,this);
         connect(eqp,&Equipment::requestWriteData,this,&Connections::writeData);
@@ -362,7 +386,7 @@ void Connections::inputProcessTimeout()
             qDebug() << QString("Error Happend - cannot add new equipments");
         }
     }
-    else if(commandType == QString("keepAlive"))
+    else if(commandType == KeepAlive)//QString("keepAlive")
     {
         uint32_t _deviceId = jsonObject.value("deviceId").toInt(0);
         if(equipments.contains(_deviceId))
@@ -370,15 +394,15 @@ void Connections::inputProcessTimeout()
             equipments.value(_deviceId)->keepAlive(&jsonDoc,&payloadBytes);
         }
     }
-    else if(commandType == QString("loginRequest"))
+    else if(commandType == LoginRequest)//QString("loginRequest")
     {
         logingIn(&jsonDoc,&payloadBytes);
     }
-    else if(commandType == QString("sessionRequest"))
+    else if(commandType == SessionRequest)//QString("sessionRequest")
     {
         sessionRequest(&jsonDoc,&payloadBytes);
     }
-    else if(commandType == QString("logoutRequest"))
+    else if(commandType == LogoutRequest)//QString("logoutRequest")
     {
         logoutSession(&jsonDoc,&payloadBytes);
     }

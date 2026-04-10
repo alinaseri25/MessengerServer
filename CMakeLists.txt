@@ -1,6 +1,21 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(MessengerServer VERSION 0.1 LANGUAGES CXX)
+# ✅ خواندن VERSION از فایل
+file(READ "${CMAKE_SOURCE_DIR}/version.txt" VERSION_STRING)
+string(STRIP "${VERSION_STRING}" VERSION_STRING)
+
+# ✅ تجزیه version به اجزای MAJOR.MINOR.PATCH
+string(REPLACE "." ";" VERSION_LIST ${VERSION_STRING})
+list(GET VERSION_LIST 0 VERSION_MAJOR)
+list(GET VERSION_LIST 1 VERSION_MINOR)
+list(GET VERSION_LIST 2 VERSION_PATCH)
+
+# ✅ محاسبه versionCode (مثلاً: 1.3.0 → 10300)
+math(EXPR VERSION_CODE "${VERSION_MAJOR} * 10000 + ${VERSION_MINOR} * 100 + ${VERSION_PATCH}")
+
+project(MessengerServer VERSION ${VERSION_STRING} LANGUAGES CXX)
+
+configure_file(version.h.in version.h @ONLY)
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -36,6 +51,8 @@ qt6_add_resources(MessengerServer "qmlchartsgallery"
         Main.qml
         CComponents/CButton.qml
         StatusIndicator.qml
+        icons/icon.png
+        version.txt
 )
 
 
@@ -54,6 +71,8 @@ target_link_libraries(MessengerServer
     PRIVATE Qt6::Quick Qt6::Network Qt6::Sql
     PRIVATE OpenSSL::SSL OpenSSL::Crypto
 )
+
+target_include_directories(MessengerServer PRIVATE ${CMAKE_BINARY_DIR})
 
 include(GNUInstallDirs)
 install(TARGETS MessengerServer

@@ -24,10 +24,12 @@ backend::~backend()
         networkThread->quit();
         networkThread->wait();
         networkThread->deleteLater();
+        networkThread = nullptr;
     }
     if(curServer != nullptr)
     {
         curServer->deleteLater();
+        curServer = nullptr;
     }
 }
 

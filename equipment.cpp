@@ -34,14 +34,27 @@ QString Equipment::getDeviceUUID()
 
 bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
 {
+    auto emitError = [&]() {
+        QJsonObject responseObject;
+        responseObject.insert("type",Handshake);//QString("handshake")
+        responseObject.insert("status",States::nok);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        emit requestWriteData(responseDocument);
+    };
+
     QJsonObject jsonObject = jsonDocument->object();
     QJsonObject responseObject;
-    if(jsonObject.value("type").toString("") == QString("handshake"))
+    if(jsonObject.value("type").toInt(0) == Handshake)//QString("handshake")
     {
         deviceUUID = jsonObject.value("deviceUUID").toString("");
         deviceName = jsonObject.value("deviceName").toString("");
         equipmentType = jsonObject.value("deviceType").toInt(EquipmentType::Other);
 
+        if(!messengerDB)
+        {
+            emit emitError();
+            return false;
+        }
         QSqlQuery query(*messengerDB);
 
         query.prepare(R"(
@@ -76,7 +89,7 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
 
         qDebug() << QString("deviceUUID : %1 - deviceName : %2 - equipmentID : %3").arg(deviceUUID,deviceName,QString::number(equipmentID));
 
-        responseObject.insert("type",QString("handshake"));
+        responseObject.insert("type",Handshake);//QString("handshake")
         responseObject.insert("status",States::ok);
         responseObject.insert("firstConnection",firstConnection);
         responseObject.insert("connectionTimeout",static_cast<qint32>(connectionTimeout));
@@ -84,10 +97,7 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
     }
     else
     {
-        responseObject.insert("type",QString("handshake"));
-        responseObject.insert("status",States::nok);
-        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-        requestWriteData(responseDocument);
+        emit emitError();
         return false;
     }
 
@@ -98,11 +108,23 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
 
 bool Equipment::keepAlive(QJsonDocument *jsonDocument, QByteArray *payload)
 {
+    auto emitError = [&]() {
+        QJsonObject responseObject;
+        responseObject.insert("type",KeepAlive);//QString("keepAlive")
+        responseObject.insert("status",States::nok);
+        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
+        emit requestWriteData(responseDocument);
+    };
+
+    if(!jsonDocument)
+    {
+        return false;
+    }
     QJsonObject jsonObject = jsonDocument->object();
     QJsonObject responseObject;
-    if(jsonObject.value("type").toString("") == QString("keepAlive"))
+    if(jsonObject.value("type").toInt(0) == KeepAlive)//QString("keepAlive")
     {
-        responseObject.insert("type",QString("keepAlive"));
+        responseObject.insert("type",KeepAlive);//QString("keepAlive")
         if(jsonObject.value("deviceId").toInt(0) == equipmentID)
         {
             responseObject.insert("status",States::ok);
@@ -117,10 +139,7 @@ bool Equipment::keepAlive(QJsonDocument *jsonDocument, QByteArray *payload)
     }
     else
     {
-        responseObject.insert("type",QString("keepAlive"));
-        responseObject.insert("status",States::nok);
-        QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-        requestWriteData(responseDocument);
+        emit emitError();
         return false;
     }
 

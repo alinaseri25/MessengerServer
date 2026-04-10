@@ -39,7 +39,7 @@ private:
     bool isDeleted;
     bool isValid;
     QDateTime updatedAt;
-    QSqlDatabase *messengerDB;
+    QSqlDatabase *messengerDB = nullptr;
 
 signals:
     uint32_t requestWriteData(QJsonDocument *jsonDoc, QByteArray *payload = nullptr);

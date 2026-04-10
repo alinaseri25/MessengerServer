@@ -20,6 +20,7 @@ Session::~Session()
     if(entity != nullptr)
     {
         entity->deleteLater();
+        entity = nullptr;
     }
 
     emit sessionTerminated(sessionId);
@@ -28,7 +29,7 @@ Session::~Session()
 bool Session::loginSession()
 {
     QJsonObject responseObject;
-    responseObject.insert(QString("type"), QString("loginResponse"));
+    responseObject.insert(QString("type"), LoginResponse);//QString("loginResponse")
 
     auto emitError = [&]() {
         responseObject.insert(QString("status"), States::nok);
@@ -184,7 +185,7 @@ bool Session::loginSession()
 bool Session::logoutSession()
 {
     QJsonObject responseObject;
-    responseObject.insert(QString("type"), QString("logoutResponse"));
+    responseObject.insert(QString("type"), LogoutResponse);//QString("logoutResponse")
 
     auto emitError = [&]() {
         responseObject.insert(QString("status"), States::nok);
@@ -195,6 +196,12 @@ bool Session::logoutSession()
     };
 
     if(entity == nullptr || equipment == nullptr)
+    {
+        emitError();
+        return false;
+    }
+
+    if(!messengerDB)
     {
         emitError();
         return false;
@@ -259,7 +266,7 @@ bool Session::checkSession(uint32_t _sessionId, QString _sessionToken)
     sessionId = _sessionId;
     sessionToken = _sessionToken;
     QJsonObject responseObject;
-    responseObject.insert(QString("type"), QString("sessionResponse"));
+    responseObject.insert(QString("type"), SessionResponse);//QString("sessionResponse")
 
     auto emitError = [&]() {
         responseObject.insert(QString("status"), States::nok);
@@ -274,6 +281,12 @@ bool Session::checkSession(uint32_t _sessionId, QString _sessionToken)
     };
 
     if(entity == nullptr || equipment == nullptr)
+    {
+        emitError();
+        return false;
+    }
+
+    if(!messengerDB)
     {
         emitError();
         return false;
@@ -418,4 +431,5 @@ void Session::onEntityTerminatd(uint32_t _entityId)
 void Session::onEquipmentTerminatd(uint32_t _equipmentID)
 {
     entity->deleteLater();
+    entity = nullptr;
 }

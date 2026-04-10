@@ -35,12 +35,12 @@ public:
     uint32_t sendTestData(QString Data);
 
 private: //variables
-    QSslSocket *tcpSocket;
+    QSslSocket *tcpSocket = nullptr;
     quint64 socketId;
     QByteArray m_buffer;
     QList<QByteArray> inputBuffers;
-    QTimer *connectionTimeout,*queueTimer,*sendTimeout,*inputProcess;
-    QSqlDatabase *messengerDB;
+    QTimer *connectionTimeout = nullptr,*queueTimer = nullptr,*sendTimeout = nullptr,*inputProcess = nullptr;
+    QSqlDatabase *messengerDB = nullptr;
     QMap<uint32_t,Equipment*> equipments;
     QMap<uint32_t,Session*> sessions;
     QList<QByteArray> sendQueue;

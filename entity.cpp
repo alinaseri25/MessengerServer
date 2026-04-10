@@ -22,7 +22,7 @@ bool Entity::loginEntity(QString _password)
 {
     auto emitError = [&]() {
         QJsonObject responseObject;
-        responseObject.insert(QString("type"),QString("loginResponse"));
+        responseObject.insert(QString("type"),LoginResponse);//QString("loginResponse")
         responseObject.insert(QString("status"), States::nok);
         responseObject.insert(QString("error"), Errors::userOrPassError);
         responseObject.insert(QString("username"),this->getUsername());
@@ -31,6 +31,11 @@ bool Entity::loginEntity(QString _password)
         emit requestWriteData(responseDocument);
     };
 
+    if(!messengerDB)
+    {
+        emit emitError();
+        return false;
+    }
     messengerDB->transaction();
     QSqlQuery entityQuery(*messengerDB);
 
@@ -97,7 +102,7 @@ bool Entity::checkExist(uint32_t _entityId)
 {
     auto emitError = [&]() {
         QJsonObject responseObject;
-        responseObject.insert(QString("type"),QString("sessionResponse"));
+        responseObject.insert(QString("type"),SessionResponse);//QString("sessionResponse")
         responseObject.insert(QString("status"), States::nok);
         responseObject.insert(QString("error"), Errors::userOrPassError);
         responseObject.insert(QString("entityId"),(qint32)_entityId);
@@ -106,6 +111,11 @@ bool Entity::checkExist(uint32_t _entityId)
         emit requestWriteData(responseDocument);
     };
 
+    if(!messengerDB)
+    {
+        emit emitError();
+        return false;
+    }
     messengerDB->transaction();
     QSqlQuery entityQuery(*messengerDB);
 

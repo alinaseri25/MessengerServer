@@ -179,6 +179,7 @@ void server::handleIncomingDescriptor(qintptr socketDescriptor)
     if (!sslSocket->setSocketDescriptor(socketDescriptor)) {
         qWarning() << "Failed to adopt socket descriptor:" << sslSocket->errorString();
         sslSocket->deleteLater();
+        sslSocket = nullptr;
         return;
     }
 

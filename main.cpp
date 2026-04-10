@@ -2,12 +2,20 @@
 #include <QQmlApplicationEngine>
 #include <QQuickView>
 #include <QQmlContext>
+#include <QDebug>
 
 #include "backend.h"
+#include "version.h"
 
 int main(int argc, char *argv[])
 {
     QGuiApplication app(argc, argv);
+
+    app.setWindowIcon(QIcon(":/icons/icon.png"));
+
+    qDebug() << "version : " << app.applicationVersion();
+    qDebug() << "Version:" << VERSION_STRING;
+    qDebug() << "Version Code:" << VERSION_CODE;
 
     backend *myBackend = new backend(nullptr);
 
