@@ -36,7 +36,8 @@ qt_add_executable(MessengerServer
     server.h
     server.cpp
     connections.h connections.cpp
-    packetStructs.h
+    #packetStructs.h
+    ../../QtLibraries/packetStructs.hpp
     equipment.h equipment.cpp
     entity.h entity.cpp
     session.h session.cpp

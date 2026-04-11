@@ -16,7 +16,7 @@
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlQuery>
 
-#include "packetStructs.h"
+#include "../../QtLibraries/packetStructs.hpp"
 
 class Entity : public QObject
 {

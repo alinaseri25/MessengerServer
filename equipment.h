@@ -15,7 +15,7 @@
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlQuery>
-#include "packetStructs.h"
+#include "../../QtLibraries/packetStructs.hpp"
 
 
 class Equipment : public QObject
