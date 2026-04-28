@@ -19,6 +19,7 @@
 
 #include "connections.h"
 #include "tlscertificategenerator.h"
+#include "entitymodel.h"
 
 class TlsTcpServer : public QTcpServer
 {
@@ -40,7 +41,7 @@ class server : public QObject
 {
     Q_OBJECT
 public:
-    explicit server(QObject *parent = nullptr);
+    explicit server(EntityModel *_entityModel, QObject *parent = nullptr);
     ~server(void);
 
 private:
@@ -49,11 +50,13 @@ private:
     quint64 listNumber;
     bool dbState = false;
     QString dbMessege;
+    int lastLimit,lastOffset;
     QString serverMsg;
+    EntityModel *entityModel = nullptr;
 
     TlsTcpServer *serverObj = nullptr;
     QMap<quint64, Connections*> connectionsList;
-    QSqlDatabase *messengerDB = nullptr;
+    QSqlDatabase messengerDB;
 
     // TLS
     QSslCertificate serverCert;
@@ -75,6 +78,9 @@ public slots:
     void stopServer(void);
     void getServerState(void);
     void sendDataTo(QString data, quint64 listNumber);
+    void loadEntitiesPage(int limit, int offset);
+    void onSetDeleted(int entityId,bool isDeleted);
+    void onSetActivate(int entityId, bool isActive);
 
 private slots:
     //void readData(QByteArray data, uint32_t _equipmentId);

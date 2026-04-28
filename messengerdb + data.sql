@@ -11,7 +11,7 @@
  Target Server Version : 80408 (8.4.8)
  File Encoding         : 65001
 
- Date: 26/04/2026 23:09:39
+ Date: 26/04/2026 23:09:53
 */
 
 SET NAMES utf8mb4;
@@ -37,6 +37,10 @@ CREATE TABLE `channel_meta`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of channel_meta
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for entities
 -- ----------------------------
 DROP TABLE IF EXISTS `entities`;
@@ -59,6 +63,11 @@ CREATE TABLE `entities`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of entities
+-- ----------------------------
+INSERT INTO `entities` VALUES (1, 'user', 'ali naseri', 'alinaseri25', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', NULL, '2026-03-09 15:21:14', '2026-04-26 22:43:25', 1, 0);
+
+-- ----------------------------
 -- Table structure for entity_avatars
 -- ----------------------------
 DROP TABLE IF EXISTS `entity_avatars`;
@@ -74,6 +83,10 @@ CREATE TABLE `entity_avatars`  (
   INDEX `idx_ea_entity_active`(`entity_id` ASC, `is_active` ASC) USING BTREE,
   CONSTRAINT `fk_ea_entity` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of entity_avatars
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for entity_memberships
@@ -100,6 +113,10 @@ CREATE TABLE `entity_memberships`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of entity_memberships
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for entity_tags
 -- ----------------------------
 DROP TABLE IF EXISTS `entity_tags`;
@@ -112,6 +129,10 @@ CREATE TABLE `entity_tags`  (
   CONSTRAINT `fk_etag_entity` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_etag_tag` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`tag_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of entity_tags
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for equipments
@@ -136,6 +157,15 @@ CREATE TABLE `equipments`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1189 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of equipments
+-- ----------------------------
+INSERT INTO `equipments` VALUES (8, 'esp32-24:0A:C4:9B:15:A8', 'esp32', 'ESP', NULL, NULL, NULL, '2026-03-06 18:32:25', '2026-03-11 13:46:06', 1);
+INSERT INTO `equipments` VALUES (182, 'a7cad039-ca3a-4b42-8501-c436812861ed', 'desktop', 'Application', NULL, NULL, NULL, '2026-03-11 11:51:32', '2026-04-23 20:52:54', 1);
+INSERT INTO `equipments` VALUES (218, '', 'other', '', NULL, NULL, NULL, '2026-03-12 16:38:29', '2026-03-12 16:39:43', 1);
+INSERT INTO `equipments` VALUES (1130, 'b049ad69-c7c9-483d-bb5d-77a37c2cf4a8', 'desktop', 'Application', NULL, NULL, NULL, '2026-04-10 20:32:21', '2026-04-10 20:39:25', 1);
+INSERT INTO `equipments` VALUES (1138, '4db7c483-cd0e-4861-b577-8965c76a35ad', 'desktop', 'Application', NULL, NULL, NULL, '2026-04-23 20:22:51', '2026-04-26 22:43:04', 1);
+
+-- ----------------------------
 -- Table structure for group_meta
 -- ----------------------------
 DROP TABLE IF EXISTS `group_meta`;
@@ -153,6 +183,10 @@ CREATE TABLE `group_meta`  (
   INDEX `fk_gm_entity`(`entity_id` ASC) USING BTREE,
   CONSTRAINT `fk_gm_entity` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of group_meta
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for message_states
@@ -183,6 +217,10 @@ CREATE TABLE `message_states`  (
   CONSTRAINT `fk_ms_receiver` FOREIGN KEY (`receiver_entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT,
   CONSTRAINT `fk_ms_reply` FOREIGN KEY (`reply_to_message_S_id`) REFERENCES `message_states` (`state_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of message_states
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for messages
@@ -217,6 +255,10 @@ CREATE TABLE `messages`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of messages
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for sessions
 -- ----------------------------
 DROP TABLE IF EXISTS `sessions`;
@@ -242,6 +284,14 @@ CREATE TABLE `sessions`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of sessions
+-- ----------------------------
+INSERT INTO `sessions` VALUES (3, 1, 8, 'e4bdd86524a94b8cb6054056f4c702f7', 'cea6db0125ea46d398b73f537c3040a8', '::ffff:192.168.1.104', 'ESP', '2026-03-09 21:56:10', '2026-03-11 13:46:07', '2026-04-08 18:26:10');
+INSERT INTO `sessions` VALUES (4, 1, 182, '66e451b1f14c41c1a8983bf4cec38e38', '4adc1c0c606f4f9c85159be4c583d531', '::ffff:192.168.1.100', 'Application', '2026-03-11 15:10:34', '2026-04-23 20:50:54', '2026-04-23 17:20:54');
+INSERT INTO `sessions` VALUES (5, 1, 1130, '8273a9975bcc49639cb07d99c81c2270', 'ea5d7cce3aa940b38e4facacea6b97fb', '::ffff:192.168.1.101', 'Descktop App', '2026-04-10 20:32:38', '2026-04-10 20:39:25', '2026-05-10 17:02:38');
+INSERT INTO `sessions` VALUES (6, 1, 1138, '3d0e18f49d3543b282b3d7bdb8c94a3d', '6a8492b45c94413d975bd60302c5c528', '::ffff:192.168.1.103', 'Application', '2026-04-23 20:23:23', '2026-04-26 22:43:25', '2026-05-26 19:13:25');
+
+-- ----------------------------
 -- Table structure for tags
 -- ----------------------------
 DROP TABLE IF EXISTS `tags`;
@@ -253,6 +303,10 @@ CREATE TABLE `tags`  (
   PRIMARY KEY (`tag_id`) USING BTREE,
   UNIQUE INDEX `tag_name`(`tag_name` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of tags
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for user_emails
@@ -274,6 +328,10 @@ CREATE TABLE `user_emails`  (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
+-- Records of user_emails
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for user_phones
 -- ----------------------------
 DROP TABLE IF EXISTS `user_phones`;
@@ -291,6 +349,10 @@ CREATE TABLE `user_phones`  (
   INDEX `idx_uph_primary`(`entity_id` ASC, `is_primary` ASC) USING BTREE,
   CONSTRAINT `fk_uph_entity` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_phones
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for user_profiles
@@ -314,6 +376,10 @@ CREATE TABLE `user_profiles`  (
   INDEX `fk_up_entity`(`entity_id` ASC) USING BTREE,
   CONSTRAINT `fk_up_entity` FOREIGN KEY (`entity_id`) REFERENCES `entities` (`entity_id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_profiles
+-- ----------------------------
 
 -- ----------------------------
 -- View structure for v_chat_list

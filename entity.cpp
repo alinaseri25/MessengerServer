@@ -66,7 +66,6 @@ bool Entity::loginEntity(QString _password)
     if (entityQuery.next()) {
         isValid = true;
         entityId = entityQuery.value("entity_id").toLongLong();
-        qDebug() << QString("entityId : %1").arg(entityId);
         displayName = entityQuery.value("display_name").toString();
         isActivate = entityQuery.value("is_active").toBool();
         isDeleted = entityQuery.value("is_deleted").toBool();
@@ -76,7 +75,7 @@ bool Entity::loginEntity(QString _password)
             emit emitError();
             isValid = false;
         }
-        else if(!isActivate || isDeleted)
+        else if(isDeleted)
         {
             emit emitError();
             isValid = false;

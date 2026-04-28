@@ -32,6 +32,11 @@ QString Equipment::getDeviceUUID()
     return deviceUUID;
 }
 
+bool Equipment::getIsActivate()
+{
+    return isActivate;
+}
+
 bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
 {
     auto emitError = [&]() {
@@ -41,6 +46,12 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
         QJsonDocument *responseDocument = new QJsonDocument(responseObject);
         emit requestWriteData(responseDocument);
     };
+
+    if(!jsonDocument)
+    {
+        emit emitError();
+        return false;
+    }
 
     QJsonObject jsonObject = jsonDocument->object();
     QJsonObject responseObject;
@@ -82,6 +93,9 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
             return false;
         }
         equipmentID = query.lastInsertId().toULongLong();
+
+        checkEquipmentState();
+
         if(equipmentID == jsonObject.value("deviceId").toInt(0))
         {
             firstConnection = false;
@@ -118,12 +132,14 @@ bool Equipment::keepAlive(QJsonDocument *jsonDocument, QByteArray *payload)
 
     if(!jsonDocument)
     {
+        emit emitError();
         return false;
     }
     QJsonObject jsonObject = jsonDocument->object();
     QJsonObject responseObject;
     if(jsonObject.value("type").toInt(0) == KeepAlive)//QString("keepAlive")
     {
+        checkEquipmentState();
         responseObject.insert("type",KeepAlive);//QString("keepAlive")
         if(jsonObject.value("deviceId").toInt(0) == equipmentID)
         {
@@ -152,5 +168,31 @@ bool Equipment::disconnectEquipment()
 {
     emit equipmentDisconnected(equipmentID);
     this->deleteLater();
+    return true;
+}
+
+bool Equipment::checkEquipmentState()
+{
+    isActivate = false;
+    if(!messengerDB)
+    {
+        return false;
+    }
+
+    QSqlQuery query(*messengerDB);
+
+    query.prepare("SELECT * FROM equipments WHERE equipment_id = :equipmentId");
+    query.bindValue(":equipmentId",equipmentID);
+
+    if(!query.exec())
+    {
+        qDebug() << query.lastError();
+        return false;
+    }
+
+    if(query.next())
+    {
+        isActivate = query.value("is_active").toBool();
+    }
     return true;
 }

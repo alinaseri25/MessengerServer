@@ -12,8 +12,10 @@ public:
     explicit TlsCertificateGenerator(QObject *parent = nullptr);
     static bool generate(const QString& certFile,
                          const QString& keyFile,
-                         const QString& commonName = "localhost",
-                         int daysValid = 365);
+                         const QString& commonName,
+                         const QStringList& ipList = {"127.0.0.1"},
+                         const QStringList& dnsList = {"localhost"},
+                         int daysValid = 3650);
 
 signals:
 };

@@ -24,13 +24,13 @@
 #include "../../QtLibraries/packetStructs.hpp"
 #include "session.h"
 
-#define connectionTime 180000
+#define connectionTime 30000
 
 class Connections : public QObject
 {
     Q_OBJECT
 public:
-    explicit Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase *_messengerDB, QObject *parent = nullptr);
+    explicit Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase &_messengerDB, QObject *parent = nullptr);
     ~Connections();
     uint32_t sendTestData(QString Data);
 

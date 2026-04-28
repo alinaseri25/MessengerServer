@@ -7,4 +7,4 @@
 #define VERSION_CODE @VERSION_CODE@
 #define VERSION_STRING "@VERSION_STRING@"
 
-#endif  VERSION_H
+#endif  //VERSION_H

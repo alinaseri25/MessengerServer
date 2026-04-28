@@ -4,7 +4,7 @@ backend::backend(QObject *parent)
     : QObject{parent}
 {
     networkThread = new QThread(this);
-    curServer = new server();
+    curServer = new server(entityModel());
     connect(curServer,&server::serverState,this,&backend::onSocketsCountChanged);
     connect(curServer,&server::dataRecived,this,&backend::onDataRecieved);
 
@@ -12,9 +12,17 @@ backend::backend(QObject *parent)
     connect(this,&backend::stopServer,curServer,&server::stopServer);
     connect(this,&backend::getServerState,curServer,&server::getServerState);
     connect(this,&backend::sendDataTo,curServer,&server::sendDataTo);
+    connect(this,&backend::loadEntitiesPage,curServer,&server::loadEntitiesPage);
+    connect(this,&backend::setActivate,curServer,&server::onSetActivate);
+    connect(this,&backend::setDeleted,curServer,&server::onSetDeleted);
 
     curServer->moveToThread(networkThread);
     networkThread->start();
+}
+
+EntityModel *backend::entityModel()
+{
+    return &m_entityModel;
 }
 
 backend::~backend()
@@ -47,22 +55,34 @@ void backend::onDataRecieved(QByteArray data, int index)
     emit dataFromSocket(str,index);
 }
 
+void backend::onSetDeleted(int entityId, bool isDeleted)
+{
+    emit setDeleted(entityId,isDeleted);
+}
+
+void backend::onSetActivate(int entityId, bool isActive)
+{
+    emit setActivate(entityId,isActive);
+}
+
 void backend::onConnectDisconnectClicked(quint16 portNumber)
 {
     if(serverState)
     {
-        //curServer->stopServer();
         emit stopServer();
     }
     else
     {
-        //curServer->startServer(QHostAddress::Any,portNumber);
         emit startServer(QHostAddress::Any,portNumber);
     }
 }
 
 void backend::onSendClicked(int listNumber)
 {
-    //curServer->sendDataTo(QString("Data send for %1").arg(listNumber),listNumber);
     emit sendDataTo(QString("Data send for %1").arg(listNumber),listNumber);
+}
+
+void backend::onQmlLoaded()
+{
+    emit loadEntitiesPage(50,0);
 }

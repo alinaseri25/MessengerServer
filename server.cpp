@@ -1,8 +1,9 @@
 #include "server.h"
 
-server::server(QObject *parent)
+server::server(EntityModel *_entityModel, QObject *parent)
     : QObject{parent}
 {
+    entityModel = _entityModel;
     qDebug() << QCoreApplication::libraryPaths();
     qDebug() << QSqlDatabase::drivers();
 
@@ -28,19 +29,21 @@ server::server(QObject *parent)
 
 server::~server()
 {
-    if (messengerDB)
-        messengerDB->close();
+    if (messengerDB.isOpen())
+        messengerDB.close();
 }
 
 bool server::loadTlsCredentials(const QString &certPath, const QString &keyPath)
 {
 
-    if (!QFile::exists("server.crt") || !QFile::exists("server.key"))
+    if (!QFile::exists(certPath) || !QFile::exists(keyPath))
     {
         TlsCertificateGenerator::generate(
-            "server.crt",
-            "server.key",
-            "192.168.1.100"
+            certPath,
+            keyPath,
+            "messengerServer",
+            {"192.168.1.100","5.57.34.52"},
+            {"localhost"}
             );
     }
 
@@ -138,21 +141,20 @@ qint64 server::getSocketsCount()
 
 bool server::createconnection()
 {
-    messengerDB = new QSqlDatabase();
-    *messengerDB = QSqlDatabase::addDatabase("QMYSQL", "myapp");
+    messengerDB = QSqlDatabase::addDatabase("QMYSQL", "myapp");
 
-    messengerDB->setHostName("127.0.0.1");
-    messengerDB->setUserName("root");
-    messengerDB->setPassword("ABCabc.123$%^");
-    messengerDB->setDatabaseName("messengerdb");
-    messengerDB->setConnectOptions("CLIENT_MULTI_RESULTS=1;MYSQL_OPT_RECONNECT=1");
+    messengerDB.setHostName("127.0.0.1");
+    messengerDB.setUserName("root");
+    messengerDB.setPassword("ABCabc.123$%^");
+    messengerDB.setDatabaseName("messengerdb");
+    messengerDB.setConnectOptions("MYSQL_OPT_RECONNECT=1");//CLIENT_MULTI_RESULTS=1;
 
-    if (messengerDB->open()) {
+    if (messengerDB.open()) {
         qDebug() << "DB Connection OK!";
         return true;
     }
     else {
-        dbMessege = messengerDB->lastError().text();
+        dbMessege = messengerDB.lastError().text();
         qDebug() << QString("DB Connection Fail: %1").arg(dbMessege);
         return false;
     }
@@ -161,7 +163,83 @@ bool server::createconnection()
 void server::sendDataTo(QString data, quint64 listNumber)
 {
     if (connectionsList.contains(listNumber))
-        connectionsList.value(listNumber)->sendTestData(data);
+    {
+        if(connectionsList.value(listNumber) != nullptr)
+        {
+            connectionsList.value(listNumber)->sendTestData(data);
+        }
+    }
+}
+
+void server::loadEntitiesPage(int limit, int offset)
+{
+    lastLimit = limit;
+    lastOffset = offset;
+    QSqlQuery query(messengerDB);
+
+    query.prepare("SELECT entity_id, entity_type, display_name, username, quick_meta, created_at, updated_at, is_active, is_deleted "
+                  "FROM entities "
+                  "ORDER BY created_at ASC "
+                  "LIMIT :limit OFFSET :offset");
+
+    query.bindValue(":limit", lastLimit);
+    query.bindValue(":offset", lastOffset);
+
+    if (!query.exec()) {
+        return;
+    }
+
+    entityModel->clear();
+
+    while(query.next())
+    {
+        EntityEnum e;
+
+        e.entity_id = query.value("entity_id").toLongLong();
+        e.entity_type = query.value("entity_type").toInt();
+        e.display_name = query.value("display_name").toString();
+        e.username = query.value("username").toString();
+
+        QJsonDocument doc = QJsonDocument::fromJson(query.value("quick_meta").toByteArray());
+        e.quick_meta = doc.object();
+
+        e.created_at = query.value("created_at").toDateTime();
+        e.updated_at = query.value("updated_at").toDateTime();
+        e.is_active = query.value("is_active").toBool();
+        e.is_deleted = query.value("is_deleted").toBool();
+
+        entityModel->addEntity(e);   // IMPORTANT: append, not reset
+    }
+}
+
+void server::onSetDeleted(int entityId, bool isDeleted)
+{
+    QSqlQuery query(messengerDB);
+
+    query.prepare("UPDATE entities SET is_deleted = :isDeleted WHERE entity_id = :entityID");
+    query.bindValue(":entityID",entityId);
+    query.bindValue(":isDeleted",isDeleted);
+
+    if (!query.exec()) {
+        return;
+    }
+
+    loadEntitiesPage(lastLimit,lastOffset);
+}
+
+void server::onSetActivate(int entityId, bool isActive)
+{
+    QSqlQuery query(messengerDB);
+
+    query.prepare("UPDATE entities SET is_active = :isActive WHERE entity_id = :entityID");
+    query.bindValue(":entityID",entityId);
+    query.bindValue(":isActive",isActive);
+
+    if (!query.exec()) {
+        return;
+    }
+
+    loadEntitiesPage(lastLimit,lastOffset);
 }
 
 void server::handleIncomingDescriptor(qintptr socketDescriptor)
@@ -242,6 +320,10 @@ void server::handleIncomingDescriptor(qintptr socketDescriptor)
 void server::disconnectedSocket(uint32_t connectionId)
 {
     if (connectionsList.contains(connectionId)) {
+        if(connectionsList.value(connectionId) != nullptr)
+        {
+            connectionsList.value(connectionId)->deleteLater();
+        }
         connectionsList.remove(connectionId);
     }
 

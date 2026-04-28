@@ -6,9 +6,15 @@ Session::Session(QSqlDatabase *_messengerDB, Entity *_entity, Equipment *_equipm
     ipAddress = _ipAddress;
     userAgent = _userAgent;
     entity = _entity;
-    connect(entity,&Entity::entityTerminatd,this,&Session::onEntityTerminatd);
+    if(entity)
+    {
+        connect(entity,&Entity::entityTerminatd,this,&Session::onEntityTerminatd);
+    }
     equipment = _equipment;
-    connect(equipment,&Equipment::equipmentTerminatd,this,&Session::onEquipmentTerminatd);
+    if(equipment)
+    {
+        connect(equipment,&Equipment::equipmentTerminatd,this,&Session::onEquipmentTerminatd);
+    }
     sessionId = 0;
     messengerDB = _messengerDB;
 
@@ -44,6 +50,12 @@ bool Session::loginSession()
     };
 
     if(entity == nullptr || equipment == nullptr)
+    {
+        emitError();
+        return false;
+    }
+
+    if(!equipment->getIsActivate())
     {
         emitError();
         return false;
@@ -286,6 +298,12 @@ bool Session::checkSession(uint32_t _sessionId, QString _sessionToken)
         return false;
     }
 
+    if(!equipment->getIsActivate())
+    {
+        emitError();
+        return false;
+    }
+
     if(!messengerDB)
     {
         emitError();
@@ -430,6 +448,9 @@ void Session::onEntityTerminatd(uint32_t _entityId)
 
 void Session::onEquipmentTerminatd(uint32_t _equipmentID)
 {
-    entity->deleteLater();
-    entity = nullptr;
+    if(entity != nullptr)
+    {
+        entity->deleteLater();
+        entity = nullptr;
+    }
 }

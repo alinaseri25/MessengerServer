@@ -1,11 +1,11 @@
 #include "connections.h"
 
-Connections::Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase *_messengerDB, QObject *parent)
+Connections::Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase &_messengerDB, QObject *parent)
     : QObject{parent}
 {
     tcpSocket = _tcpSocket;
     socketId = _socketId;
-    messengerDB = _messengerDB;
+    messengerDB = &_messengerDB;
 
     connect(tcpSocket,&QSslSocket::readyRead,this,&Connections::readyRead);
     connect(tcpSocket,&QSslSocket::disconnected,this,&Connections::disconnectedSocket);
@@ -43,12 +43,15 @@ Connections::~Connections()
         }
     }
 
-    if(tcpSocket->isOpen())
+    if(tcpSocket)
     {
-        tcpSocket->close();
+        if(tcpSocket->isOpen())
+        {
+            tcpSocket->close();
+        }
+        tcpSocket->deleteLater();
+        tcpSocket = nullptr;
     }
-    tcpSocket->deleteLater();
-    tcpSocket = nullptr;
 }
 
 uint32_t Connections::sendTestData(QString Data)
@@ -139,7 +142,7 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
 
 bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
 {
-    if(!jsonDoc)
+    if(!jsonDoc || (tcpSocket == nullptr))
     {
         return false;
     }
@@ -203,6 +206,10 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
 
 bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
 {
+    if(!jsonDoc)
+    {
+        return false;
+    }
     QJsonObject jsonObject = jsonDoc->object();
     QJsonObject responseObject;
     responseObject.insert(QString("type"), LogoutResponse);//QString("logoutResponse")
@@ -275,6 +282,7 @@ uint32_t Connections::writeData(QJsonDocument *jsonDoc, QByteArray *payload)
         payload = nullptr;
     }
     sendQueue.append(data);
+    //qDebug() << "[TX] JSON:" << jsonByteArray;
     queueTimer->start();
     return data.size();
 }
@@ -285,7 +293,6 @@ void Connections::onQueueTimerTimeout()
     {
         if(tcpSocket != nullptr)
         {
-            // qDebug() << QString("Start To Send");
             tcpSocket->write(sendQueue.at(0));
             queueTimer->stop();
             sendTimeout->start(1000);
@@ -295,30 +302,34 @@ void Connections::onQueueTimerTimeout()
 
 void Connections::onConnectionTimeout()
 {
-    qDebug() << QString("Connection Time Over Start");
+    if(tcpSocket != nullptr)
+    {
+        tcpSocket->disconnect();
+        tcpSocket->close();
+    }
     emit connectionDisconnected(socketId);
-    tcpSocket->disconnect();
-    tcpSocket->close();
-    qDebug() << QString("Connection Time Over End");
 }
 
 void Connections::onSendTimeout()
 {
-    qDebug() << QString("Timeout");
-    sendTimeout->stop();
-    queueTimer->start();
+    if(sendTimeout != nullptr)
+    {
+        sendTimeout->stop();
+    }
+    if(queueTimer != nullptr)
+    {
+        queueTimer->start();
+    }
 }
 
 void Connections::onBytesWrited(qint64 _bytes)
 {
-    qDebug() << QString("Bytes Wirted : %1 - sendQueue.at(0).size() : %2").arg(_bytes).arg(sendQueue.at(0).size());
     if(sendQueue.size() > 0)
     {
         if(_bytes == sendQueue.at(0).size())
         {
             sendQueue.removeAt(0);
-            sendTimeout->stop();
-            queueTimer->start();
+            onSendTimeout();
         }
     }
 }
@@ -337,7 +348,10 @@ void Connections::inputProcessTimeout()
     {
         return;
     }
-    inputProcess->stop();
+    if(inputProcess != nullptr)
+    {
+        inputProcess->stop();
+    }
     const DataHeader *header = (DataHeader *)(inputBuffers.at(0).constData());
 
     // ── استخراج JSON ──────────────────────────────────────────────
@@ -362,7 +376,7 @@ void Connections::inputProcessTimeout()
         return;
     }
 
-    qDebug() << "[RX] JSON:" << jsonBytes;
+    //qDebug() << "[RX] JSON:" << jsonBytes;
     connectionTimeout->start(connectionTime);
 
     // ── dispatch بر اساس type ─────────────────────────────────────
@@ -391,7 +405,10 @@ void Connections::inputProcessTimeout()
         uint32_t _deviceId = jsonObject.value("deviceId").toInt(0);
         if(equipments.contains(_deviceId))
         {
-            equipments.value(_deviceId)->keepAlive(&jsonDoc,&payloadBytes);
+            if(equipments.value(_deviceId) != nullptr)
+            {
+                equipments.value(_deviceId)->keepAlive(&jsonDoc,&payloadBytes);
+            }
         }
     }
     else if(commandType == LoginRequest)//QString("loginRequest")
@@ -421,6 +438,10 @@ void Connections::onSessionTerminated(uint32_t _sessionId)
 
 void Connections::readyRead()
 {
+    if(tcpSocket == nullptr)
+    {
+        return;
+    }
     // ── داده جدید رو به بافر اضافه کن ────────────────────────────────
     m_buffer.append(tcpSocket->readAll());
 
@@ -434,8 +455,8 @@ void Connections::readyRead()
         // ── خواندن هدر ───────────────────────────────────────────────
         const DataHeader *header = (DataHeader *)(m_buffer.constData());
 
-        qDebug() << QString("[RX] jsonSize=%1 payloadSize=%2")
-                        .arg(header->jsonSize).arg(header->payloadSize);
+        // qDebug() << QString("[RX] jsonSize=%1 payloadSize=%2")
+        //                 .arg(header->jsonSize).arg(header->payloadSize);
 
         // ── validation ────────────────────────────────────────────────
         if (header->jsonSize == 0 || header->jsonSize > MAX_JSON_SIZE) {
@@ -475,5 +496,8 @@ void Connections::disconnectedSocket()
 
 void Connections::errorOccurred(QAbstractSocket::SocketError socketError)
 {
-    qDebug() << QString("Error : %1").arg(tcpSocket->errorString());
+    if(tcpSocket != nullptr)
+    {
+        qDebug() << QString("Error : %1").arg(tcpSocket->errorString());
+    }
 }
