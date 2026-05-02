@@ -32,6 +32,8 @@ signals:
     void loadEntitiesPage(int limit, int offset);
     void setDeleted(int entityId,bool isDeleted);
     void setActivate(int entityId, bool isActive);
+    void createNewUser(const QString &display,const QString &username,const QString &password);
+    void updateUser(int id,const QString &display,const QString &username,const QString &password);
 
 private slots:
     void onSocketsCountChanged(bool _state, QString _serverMsg, quint64 _SocketCount, bool _dbState, QString _dbMsg);
@@ -43,6 +45,8 @@ public slots:
     void onQmlLoaded(void);
     void onSetDeleted(int entityId,bool isDeleted);
     void onSetActivate(int entityId, bool isActive);
+    void onCreateNewUser(const QString &display,const QString &username,const QString &password);
+    void onUpdateUser(int id,const QString &display,const QString &username,const QString &password);
 };
 
 #endif // BACKEND_H

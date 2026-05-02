@@ -91,6 +91,13 @@ bool Connections::logingIn(QJsonDocument *jsonDoc, QByteArray *payload)
     };
     responseObject.insert(QString("type"),LoginResponse);//QString("loginResponse")
     uint32_t _deviceId = jsonObject.value(QString("deviceId")).toInt(0);
+
+    if(!tcpSocket)
+    {
+        emit emitError();
+        return false;
+    }
+
     if(!equipments.contains(_deviceId))
     {
         emit emitError();
@@ -175,6 +182,12 @@ bool Connections::sessionRequest(QJsonDocument *jsonDoc, QByteArray *payload)
 
     QString userAgent = jsonObject.value(QString("userAgent")).toString("TestAgent");
 
+    if(!tcpSocket)
+    {
+        emit emitError();
+        return false;
+    }
+
     Session *session = new Session(messengerDB,entity,equipments.value(_deviceId),tcpSocket->peerAddress().toString(),userAgent,this);
     uint32_t sessionId = jsonObject.value(QString("sessionId")).toInt(0);
     QString sessionTocken = jsonObject.value(QString("sessionTocken")).toString("");
@@ -235,6 +248,11 @@ bool Connections::logoutSession(QJsonDocument *jsonDoc, QByteArray *payload)
         return false;
     }
     Session *_session = sessions.value(_sessionId);
+    if(!_session)
+    {
+        emit emitError();
+        return false;
+    }
     if(_session->getSessionToken() != _sessionTocken)
     {
         emit emitError();

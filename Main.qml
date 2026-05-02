@@ -15,240 +15,310 @@ Item {
     property int col1Width: 0
     property int col2Width: 0
     property int col3Width: 0
-
-    Rectangle{
-        x: 0
-        y: 0
-        width: parent.width
-        height: 100
-
-        TextEdit {
-            x: 20
-            y: 30
-            width: 100
-            height: 30
-            id: serverPort
-            text: qsTr("1008")
-        }
-
-        CButton{
-            x: 140
-            y: 30
-            width: 100
-            height: 30
-            id: btnConnectDisconnect
-            text: qsTr("start")
-            onClicked:{
-                serverConnectDisconnect(serverPort.text)
-            }
-        }
-
-        Text {
-            x: 250
-            y: 20
-            width: 200
-            height: 30
-            id: serverDetails
-            text: qsTr("")
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
-    }
-
-    StatusIndicator{
-        id: indicator
-        width: 50
-        x: parent.width - width
-        y: 10
-    }
-
-    Rectangle{
-        x: 0
-        y: 110
-        width: parent.width
-        height: 100
-
-        Text {
-            x: 20
-            y: 30
-            width: 100
-            height: 30
-            id: connectionNumber
-            text: qsTr("0")
-        }
-    }
-
-    Rectangle{
-        x: 0
-        y: 220
-        width: parent.width
-        height: 100
-
-        TextEdit {
-            x: 20
-            y: 30
-            width: 100
-            height: 30
-            id: connectionSelector
-            text: qsTr("0")
-        }
-
-        CButton{
-            x: 140
-            y: 30
-            width: 100
-            height: 30
-            id: btnSendData
-            text: qsTr("send data")
-            onClicked:{
-                sendDatato(connectionSelector.text)
-            }
-        }
-    }
-
-    Rectangle{
-        x: 0
-        y: 330
-        width: parent.width
-        height: 100
-
-        Text{
-            x: 20
-            y: 30
-            width: 100
-            height: 30
-            id: connectionRcvData
-            text: qsTr("-------------")
-        }
-
-        Text{
-            x: 140
-            y: 30
-            width: 100
-            height: 30
-            id: connectionRcvIndex
-            text: qsTr("--")
-        }
-    }
+    property int entityId: 0    // 0 → new user, otherwise → edit user
 
     Rectangle {
-        x: 0
-        y: 330
-        width: parent.width
-        height: 300
+        anchors.fill: parent
+        color: "#f2f4f7"
 
-        Column {
+        ColumnLayout {
             anchors.fill: parent
+            anchors.margins: 12
+            spacing: 14
 
-
-            // ---------------- Title Bar ----------------
+            // ---------------- HEADER ----------------
             Rectangle {
-                width: parent.width
-                height: 40
-                color: "#2c3e50"
+                Layout.fillWidth: true
+                height: 80
+                radius: 8
+                color: "#ffffff"
+                border.color: "#d0d3d8"
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 10
+                    anchors.margins: 12
+                    spacing: 12
 
-                    Text {
-                        text: "Display Name"
-                        color: "white"
-                        font.bold: true
-                        Layout.preferredWidth: col1Width
-                        horizontalAlignment: Text.AlignLeft
+                    TextEdit {
+                        id: serverPort
+                        text: "1008"
+                        Layout.preferredWidth: 80
+                        height: 32
+                    }
+
+                    CButton {
+                        id: btnConnectDisconnect
+                        text: "start"
+                        Layout.preferredWidth: 100
+                        height: 32
+
+                        onClicked: {
+                            serverConnectDisconnect(serverPort.text)
+                        }
                     }
 
                     Text {
-                        text: "Username"
-                        color: "white"
-                        font.bold: true
-                        Layout.preferredWidth: col2Width
-                        horizontalAlignment: Text.AlignLeft
+                        id: serverDetails
+                        text: ""
+                        Layout.fillWidth: true
+                        color: "#333"
+                        verticalAlignment: Text.AlignVCenter
                     }
 
-                    Text {
-                        text: "Operations"
-                        color: "white"
-                        font.bold: true
-                        Layout.preferredWidth: col2Width
-                        horizontalAlignment: Text.AlignLeft
+                    StatusIndicator {
+                        id: indicator
+                        width: 40
                     }
                 }
             }
 
-            // ---------------- ListView ----------------
-            ListView {
-                id: listView
-                width: parent.width
-                height: parent.height - 40
-
-                model: myBackend.entityModel
-                delegate: entityDelegate
-                clip: true
-            }
-        }
-
-        // -------- Delegate --------
-        Component {
-            id: entityDelegate
-
+            // ---------------- SOCKET COUNT ----------------
             Rectangle {
-                width: ListView.view.width
+                Layout.fillWidth: true
                 height: 70
-                radius: 6
-                border.width: 1
-                border.color: "#444"
-                color: is_deleted ? "#ff4d4d"
-                                  : (is_active ? "#8fff8f" : "#fff7a6")
+                radius: 8
+                color: "#ffffff"
+                border.color: "#d0d3d8"
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 10
-                    spacing: 0
+                    anchors.margins: 12
 
                     Text {
-                        text: display_name
-                        color: "black"
-                        Layout.preferredWidth: col1Width
-                        horizontalAlignment: Text.AlignLeft
-                        elide: Text.ElideRight
+                        text: "Connections:"
+                        font.bold: true
                     }
 
                     Text {
-                        text: username
-                        color: "black"
-                        Layout.preferredWidth: col2Width
-                        horizontalAlignment: Text.AlignLeft
-                        elide: Text.ElideRight
+                        id: connectionNumber
+                        text: "0"
+                        color: "#222"
+                    }
+                }
+            }
+
+            // ---------------- SEND DATA ----------------
+            // Rectangle {
+            //     Layout.fillWidth: true
+            //     height: 90
+            //     radius: 8
+            //     color: "#ffffff"
+            //     border.color: "#d0d3d8"
+
+            //     RowLayout {
+            //         anchors.fill: parent
+            //         anchors.margins: 12
+            //         spacing: 12
+
+            //         TextEdit {
+            //             id: connectionSelector
+            //             text: "0"
+            //             Layout.preferredWidth: 80
+            //             height: 30
+            //         }
+
+            //         CButton {
+            //             id: btnSendData
+            //             text: "send data"
+            //             Layout.preferredWidth: 110
+            //             height: 32
+
+            //             onClicked: {
+            //                 sendDatato(connectionSelector.text)
+            //             }
+            //         }
+            //     }
+            // }
+
+            // ---------------- RECEIVED DATA ----------------
+            // Rectangle {
+            //     Layout.fillWidth: true
+            //     height: 90
+            //     radius: 8
+            //     color: "#ffffff"
+            //     border.color: "#d0d3d8"
+
+            //     RowLayout {
+            //         anchors.fill: parent
+            //         anchors.margins: 12
+            //         spacing: 12
+
+            //         Text {
+            //             text: "Data:"
+            //             font.bold: true
+            //         }
+
+            //         Text {
+            //             id: connectionRcvData
+            //             text: "-------------"
+            //         }
+
+            //         Text {
+            //             text: "Index:"
+            //             font.bold: true
+            //         }
+
+            //         Text {
+            //             id: connectionRcvIndex
+            //             text: "--"
+            //         }
+            //     }
+            // }
+
+            // ---------------- ENTITY LIST ----------------
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                radius: 8
+                color: "#ffffff"
+                border.color: "#d0d3d8"
+
+                ColumnLayout {
+                    anchors.fill: parent
+
+                    // ------ Header ------
+                    Rectangle {
+                        Layout.fillWidth: true
+                        height: 40
+                        color: "#2c3e50"
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.margins: 10
+
+                            Text {
+                                text: "Display Name"
+                                color: "white"
+                                font.bold: true
+                                Layout.preferredWidth: col1Width
+                            }
+
+                            Text {
+                                text: "Username"
+                                color: "white"
+                                font.bold: true
+                                Layout.preferredWidth: col2Width
+                            }
+
+                            Text {
+                                text: "Operations"
+                                color: "white"
+                                font.bold: true
+                                Layout.preferredWidth: col3Width
+                            }
+                        }
                     }
 
-                    RowLayout {
-                        Layout.preferredWidth: col3Width
-                        spacing: 8
+                    // ------ List ------
+                    ListView {
+                        id: listView
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        model: myBackend.entityModel
+                        clip: true
+                        delegate: entityDelegate
+                    }
+                }
+            }
 
-                        // DELETE / UNDELETE ICON BUTTON
-                        IconButton {
-                            text: is_deleted ? "↺" : "✖"
-                            onClicked: {
-                                myBackend.onSetDeleted(entity_id,!is_deleted)
-                            }
+            Rectangle {
+                Layout.fillWidth: true
+                height: 70
+                radius: 8
+                color: "#ffffff"
+                border.color: "#d0d3d8"
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 10
+
+                    CButton {
+                        id: btnAddUser
+                        text: "+ Add New User"
+                        Layout.preferredWidth: 150
+                        onClicked: {
+                            userEditPopup.resetForm()
+                            userEditPopup.open()
                         }
+                    }
+                }
+            }
 
-                        // ACTIVE / DEACTIVE ICON BUTTON
-                        IconButton {
-                            text: is_active ? "⛔" : "✔"
-                            onClicked: {
-                                myBackend.onSetActivate(entity_id,!is_active)
-                            }
-                        }
+            // ---------------- DB STATUS ----------------
+            Rectangle {
+                Layout.fillWidth: true
+                height: 70
+                radius: 8
+                color: "#ffffff"
+                border.color: "#d0d3d8"
 
-                        // EDIT ICON BUTTON
-                        IconButton {
-                            text: "✎"
-                            onClicked: {
-                                //myBackend.editEntity(entity_id)
-                            }
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 12
+
+                    Text { text: "Database Status:"; font.bold: true }
+                    Text { id: databaseStatus; text: "Connecting ..." }
+                }
+            }
+        }
+    }
+
+    // -------- Delegate --------
+    Component {
+        id: entityDelegate
+
+        Rectangle {
+            width: ListView.view.width
+            height: 60
+            radius: 6
+            border.width: 1
+            border.color: "#ccc"
+            color: is_deleted ? "#ffcccc" :
+                   (is_active ? "#d6ffd6" : "#fff3c2")
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.margins: 10
+                spacing: 8
+
+                Text {
+                    text: display_name
+                    Layout.preferredWidth: col1Width
+                    elide: Text.ElideRight
+                }
+
+                Text {
+                    text: username
+                    Layout.preferredWidth: col2Width
+                    elide: Text.ElideRight
+                }
+
+                RowLayout {
+                    Layout.preferredWidth: col3Width
+                    spacing: 8
+
+                    IconButton {
+                        text: is_deleted ? "↺" : "✖"
+                        onClicked: myBackend.onSetDeleted(entity_id, !is_deleted)
+                    }
+
+                    IconButton {
+                        text: is_active ? "⛔" : "✔"
+                        onClicked: myBackend.onSetActivate(entity_id, !is_active)
+                    }
+
+                    IconButton {
+                        text: "✎"
+                        onClicked: {
+                            userEditPopup.setUserValues(
+                                entity_id,
+                                display_name,
+                                username,
+                                ""
+                            )
+                            userEditPopup.open()
                         }
                     }
                 }
@@ -256,31 +326,112 @@ Item {
         }
     }
 
-    Rectangle{
-        x: 0
-        y: 530
-        width: parent.width
-        height: 100
+    Popup {
+        id: userEditPopup
+        modal: true
+        focus: true
+        width: 350
+        height: 320
 
-        Text{
-            x: 20
-            y: 30
-            width: 100
-            height: 30
-            id: databaseData
-            text: qsTr("Data base Status : ")
+
+        x: (parent.width - width) / 2
+        y: (parent.height - height) / 2
+
+        background: Rectangle {
+            radius: 10
+            color: "white"
+            border.color: "#aaa"
         }
 
-        Text{
-            x: 140
-            y: 30
-            width: 100
-            height: 30
-            id: databaseStatus
-            text: qsTr("Connecting ...")
+        // --------- function for filling data when editing ---------
+        function setUserValues(id, display, username, password) {
+            entityId = id
+            tfDisplayName.text = display
+            tfUsername.text = username
+            tfPassword.text = password
+        }
+
+        // --------- function to reset popup (for creating new user) ---------
+        function resetForm() {
+            entityId = 0
+            tfDisplayName.text = ""
+            tfUsername.text = ""
+            tfPassword.text = ""
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            anchors.margins: 20
+            spacing: 14
+
+            // ----- Title -----
+            Text {
+                text: entityId === 0 ? "Create New User" : "Edit User"
+                font.pixelSize: 20
+                font.bold: true
+                color: "#2c3e50"
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            // ----- Form -----
+            TextField {
+                id: tfDisplayName
+                placeholderText: "Display Name"
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: tfUsername
+                placeholderText: "Username"
+                Layout.fillWidth: true
+            }
+
+            TextField {
+                id: tfPassword
+                placeholderText: "Password"
+                echoMode: TextInput.Password
+                Layout.fillWidth: true
+            }
+
+            // ----- Buttons -----
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 12
+
+                CButton {
+                    text: "Cancel"
+                    Layout.fillWidth: true
+                    onClicked: userEditPopup.close()
+                }
+
+                CButton {
+                    text: entityId === 0 ? "Create" : "Save"
+                    Layout.fillWidth: true
+
+                    onClicked: {
+                        if (entityId === 0) {
+                            myBackend.onCreateNewUser(
+                                tfDisplayName.text,
+                                tfUsername.text,
+                                tfPassword.text
+                            )
+                        } else {
+                            myBackend.onUpdateUser(
+                                entityId,
+                                tfDisplayName.text,
+                                tfUsername.text,
+                                tfPassword.text
+                            )
+                        }
+
+                        userEditPopup.close()
+                    }
+                }
+            }
         }
     }
 
+    // ---------------- INIT ----------------
     Component.onCompleted: {
         col1Width = (width - 20) / 3
         col2Width = (width - 20) / 3
@@ -289,46 +440,34 @@ Item {
         serverConnectDisconnect.connect(myBackend.onConnectDisconnectClicked)
         sendDatato.connect(myBackend.onSendClicked)
         qmlLoaded.connect(myBackend.onQmlLoaded)
-        indicator.setStatus("ERROR")
 
+        indicator.setStatus("ERROR")
         qmlLoaded()
     }
 
-    Connections{
+    // ---------------- SIGNAL CONNECTIONS ----------------
+    Connections {
         target: myBackend
 
-        function onDataBaseState(dbState,msg){
-            if(dbState)
-            {
-                databaseStatus.text = qsTr("Connected Successfully .")
-            }
-            else
-            {
-                databaseStatus.text =  qsTr("Error : ") + msg
-            }
+        function onDataBaseState(dbState, msg) {
+            databaseStatus.text = dbState ?
+                                  "Connected Successfully." :
+                                  "Error: " + msg
         }
 
-        function onServerStateChanged(state,msg){
+        function onServerStateChanged(state, msg) {
             serverDetails.text = msg
-            if(state === true)
-            {
-                btnConnectDisconnect.text = qsTr("stop")
-                indicator.setStatus("OK")
-            }
-            else
-            {
-                btnConnectDisconnect.text = qsTr("start")
-                indicator.setStatus("ERROR")
-            }
+            btnConnectDisconnect.text = state ? "stop" : "start"
+            indicator.setStatus(state ? "OK" : "ERROR")
         }
 
-        function onSocketsCount(count){
-            connectionNumber.text = count
+        function onSocketsCount(count) {
+            //connectionNumber.text = count
         }
 
-        function onDataFromSocket(data,index){
-            connectionRcvData.text = data
-            connectionRcvIndex.text = index
+        function onDataFromSocket(data, index) {
+            //connectionRcvData.text = data
+            //connectionRcvIndex.text = index
         }
     }
 }

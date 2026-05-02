@@ -16,6 +16,7 @@
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QDebug>
+#include <QCryptographicHash>
 
 #include "connections.h"
 #include "tlscertificategenerator.h"
@@ -68,6 +69,7 @@ private:
     bool loadTlsCredentials(const QString &certPath, const QString &keyPath);
 
     void handleIncomingDescriptor(qintptr socketDescriptor);
+    QString hashPassword(const QString &password);
 
 signals:
     void dataRecived(QByteArray data, int index);
@@ -81,6 +83,8 @@ public slots:
     void loadEntitiesPage(int limit, int offset);
     void onSetDeleted(int entityId,bool isDeleted);
     void onSetActivate(int entityId, bool isActive);
+    void createNewUser(const QString &display,const QString &username,const QString &password);
+    void updateUser(int id,const QString &display,const QString &username,const QString &password);
 
 private slots:
     //void readData(QByteArray data, uint32_t _equipmentId);

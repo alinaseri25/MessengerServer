@@ -98,6 +98,13 @@ void server::startServer(QHostAddress _address, quint16 _port)
     listenAddress = _address;
     portNumber = _port;
 
+    if(!serverObj)
+    {
+        serverObj = new TlsTcpServer(this);
+        connect(serverObj, &TlsTcpServer::descriptorReady,
+                this, &server::handleIncomingDescriptor);
+    }
+
     if (!serverObj->listen(listenAddress, portNumber)) {
         serverMsg = QString("Listen failed: %1").arg(serverObj->errorString());
         qWarning() << serverMsg;
@@ -124,13 +131,28 @@ void server::startServer(QHostAddress _address, quint16 _port)
 
 void server::stopServer()
 {
-    serverObj->close();
+    if(serverObj)
+    {
+        serverObj->close();
+    }
+    else
+    {
+        serverObj = new TlsTcpServer(this);
+        connect(serverObj, &TlsTcpServer::descriptorReady,
+                this, &server::handleIncomingDescriptor);
+    }
     serverMsg = "Server Closed!";
     emit serverState(serverObj->isListening(), serverMsg, getSocketsCount(), dbState, dbMessege);
 }
 
 void server::getServerState()
 {
+    if(!serverObj)
+    {
+        serverObj = new TlsTcpServer(this);
+        connect(serverObj, &TlsTcpServer::descriptorReady,
+                this, &server::handleIncomingDescriptor);
+    }
     emit serverState(serverObj->isListening(), serverMsg, getSocketsCount(), dbState, dbMessege);
 }
 
@@ -173,6 +195,10 @@ void server::sendDataTo(QString data, quint64 listNumber)
 
 void server::loadEntitiesPage(int limit, int offset)
 {
+    if(entityModel == nullptr)
+    {
+        return;
+    }
     lastLimit = limit;
     lastOffset = offset;
     QSqlQuery query(messengerDB);
@@ -242,6 +268,39 @@ void server::onSetActivate(int entityId, bool isActive)
     loadEntitiesPage(lastLimit,lastOffset);
 }
 
+void server::createNewUser(const QString &display, const QString &username, const QString &password)
+{
+    QSqlQuery query(messengerDB);
+
+    query.prepare("INSERT INTO entities (entity_type, display_name, username, password_hash) VALUES ('user', :displayName, :username, :password);");
+    query.bindValue(":displayName",display);
+    query.bindValue(":username",username);
+    query.bindValue(":password",hashPassword(password));
+
+    if (!query.exec()) {
+        return;
+    }
+
+    loadEntitiesPage(lastLimit,lastOffset);
+}
+
+void server::updateUser(int id, const QString &display, const QString &username, const QString &password)
+{
+    QSqlQuery query(messengerDB);
+
+    query.prepare("UPDATE entities SET display_name = :displayName, username = :username, password_hash = :password WHERE entity_id = :entityId ");
+    query.bindValue(":displayName",display);
+    query.bindValue(":username",username);
+    query.bindValue(":password",hashPassword(password));
+    query.bindValue(":entityId",id);
+
+    if (!query.exec()) {
+        return;
+    }
+
+    loadEntitiesPage(lastLimit,lastOffset);
+}
+
 void server::handleIncomingDescriptor(qintptr socketDescriptor)
 {
     if (!tlsEnabled) {
@@ -287,6 +346,12 @@ void server::handleIncomingDescriptor(qintptr socketDescriptor)
 
                 connectionsList.insert(newId, con);
 
+                if(!serverObj)
+                {
+                    serverObj = new TlsTcpServer(this);
+                    connect(serverObj, &TlsTcpServer::descriptorReady,
+                            this, &server::handleIncomingDescriptor);
+                }
                 emit serverState(serverObj->isListening(),
                                  serverMsg,
                                  getSocketsCount(),
@@ -317,6 +382,13 @@ void server::handleIncomingDescriptor(qintptr socketDescriptor)
     sslSocket->startServerEncryption();
 }
 
+QString server::hashPassword(const QString &password)
+{
+    QByteArray input = password.toUtf8();
+    QByteArray hash = QCryptographicHash::hash(input, QCryptographicHash::Sha256);
+    return QString(hash.toHex());
+}
+
 void server::disconnectedSocket(uint32_t connectionId)
 {
     if (connectionsList.contains(connectionId)) {
@@ -327,6 +399,12 @@ void server::disconnectedSocket(uint32_t connectionId)
         connectionsList.remove(connectionId);
     }
 
+    if(!serverObj)
+    {
+        serverObj = new TlsTcpServer(this);
+        connect(serverObj, &TlsTcpServer::descriptorReady,
+                this, &server::handleIncomingDescriptor);
+    }
     emit serverState(serverObj->isListening(),
                      serverMsg,
                      getSocketsCount(),

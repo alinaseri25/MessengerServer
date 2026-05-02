@@ -15,6 +15,8 @@ backend::backend(QObject *parent)
     connect(this,&backend::loadEntitiesPage,curServer,&server::loadEntitiesPage);
     connect(this,&backend::setActivate,curServer,&server::onSetActivate);
     connect(this,&backend::setDeleted,curServer,&server::onSetDeleted);
+    connect(this,&backend::createNewUser,curServer,&server::createNewUser);
+    connect(this,&backend::updateUser,curServer,&server::updateUser);
 
     curServer->moveToThread(networkThread);
     networkThread->start();
@@ -63,6 +65,16 @@ void backend::onSetDeleted(int entityId, bool isDeleted)
 void backend::onSetActivate(int entityId, bool isActive)
 {
     emit setActivate(entityId,isActive);
+}
+
+void backend::onCreateNewUser(const QString &display, const QString &username, const QString &password)
+{
+    emit createNewUser(display,username,password);
+}
+
+void backend::onUpdateUser(int id, const QString &display, const QString &username, const QString &password)
+{
+    emit updateUser(id,display,username,password);
 }
 
 void backend::onConnectDisconnectClicked(quint16 portNumber)
