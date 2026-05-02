@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 {
     QQuickStyle::setStyle("Fusion");
     file.setFileName(QString("log %1.txt").arg(QDateTime::currentDateTime().toMSecsSinceEpoch()));
-    //qInstallMessageHandler(myMessageHandler);
+    qInstallMessageHandler(myMessageHandler);
 
     QGuiApplication app(argc, argv);
 
