@@ -24,35 +24,43 @@ set(OPENSSL_INCLUDE_DIR "C:/vcpkg/packages/openssl_x64-mingw-dynamic/include")
 set(OPENSSL_CRYPTO_LIBRARY "C:/vcpkg/packages/openssl_x64-mingw-dynamic/lib/libcrypto.dll.a")
 set(OPENSSL_SSL_LIBRARY    "C:/vcpkg/packages/openssl_x64-mingw-dynamic/lib/libssl.dll.a")
 
-find_package(Qt6 REQUIRED COMPONENTS Quick Network Sql)
+find_package(Qt6 REQUIRED COMPONENTS Quick QuickControls2 Network Sql)
 find_package(OpenSSL REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
-qt_add_executable(MessengerServer
+qt_add_executable(${PROJECT_NAME}
     main.cpp
-    backend.h
-    backend.cpp
-    server.h
-    server.cpp
-    connections.h connections.cpp
-    #packetStructs.h
-    ../../QtLibraries/packetStructs.hpp
-    equipment.h equipment.cpp
-    entity.h entity.cpp
-    session.h session.cpp
-    tlscertificategenerator.h tlscertificategenerator.cpp
-    entitymodel.h entitymodel.cpp
+)
+
+qt_add_qml_module(MessengerServer
+    URI ${PROJECT_NAME}
+    SOURCES
+        backend.h
+        backend.cpp
+        server.h
+        server.cpp
+        connections.h connections.cpp
+        #packetStructs.h
+        ../../QtLibraries/packetStructs.hpp
+        equipment.h equipment.cpp
+        entity.h entity.cpp
+        session.h session.cpp
+        tlscertificategenerator.h tlscertificategenerator.cpp
+        entitymodel.h entitymodel.cpp
+    QML_FILES
+        Main.qml
+        CComponents/CButton.qml
+        CComponents/IconButton.qml
+        CComponents/Toast.qml
+        theme/Theme.qml
+        StatusIndicator.qml
 )
 
 # ✅ استفاده از qt6_add_resources بجای qt_add_qml_module
 qt6_add_resources(MessengerServer "qmlchartsgallery"
     PREFIX "/"
     FILES
-        Main.qml
-        CComponents/CButton.qml
-        CComponents/IconButton.qml
-        StatusIndicator.qml
         icons/icon.png
         version.txt
 )
@@ -70,7 +78,7 @@ set_target_properties(MessengerServer PROPERTIES
 )
 
 target_link_libraries(MessengerServer
-    PRIVATE Qt6::Quick Qt6::Network Qt6::Sql
+    PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Sql
     PRIVATE OpenSSL::SSL OpenSSL::Crypto
 )
 

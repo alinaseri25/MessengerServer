@@ -2,8 +2,10 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import "CComponents"
+import "theme"
 
-Item {
+ApplicationWindow {
+    id: root
     width: 640
     height: 600
     visible: true
@@ -17,40 +19,63 @@ Item {
     property int col3Width: 0
     property int entityId: 0    // 0 → new user, otherwise → edit user
 
+    Theme { id: appTheme }
+
+    color: appTheme.background
+
+    background: Rectangle {
+        color: appTheme.background
+    }
+
+    Toast{
+        id: toastMessage
+        themeManager: appTheme
+    }
+
     Rectangle {
         anchors.fill: parent
-        color: "#f2f4f7"
+        color: appTheme.background
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 12
-            spacing: 14
+            anchors.margins: appTheme.spacing.lg
+            spacing: appTheme.spacing.md
 
-            // ---------------- HEADER ----------------
+            // ================= HEADER =================
             Rectangle {
                 Layout.fillWidth: true
-                height: 80
-                radius: 8
-                color: "#ffffff"
-                border.color: "#d0d3d8"
+                Layout.preferredHeight: appTheme.control.heightLarge + appTheme.spacing.lg
+                radius: appTheme.radius.md
+                color: appTheme.surface
+                border.color: appTheme.border
+                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
+                    anchors.margins: appTheme.spacing.md
+                    spacing: appTheme.spacing.md
 
-                    TextEdit {
+                    TextField {
                         id: serverPort
                         text: "1008"
-                        Layout.preferredWidth: 80
-                        height: 32
+                        Layout.preferredWidth: 100
+                        Layout.preferredHeight: appTheme.control.heightMedium
+                        color: appTheme.textPrimary
+                        placeholderText: "Port"
+                        placeholderTextColor: appTheme.textSecondary
+                        background: Rectangle {
+                            radius: appTheme.radius.sm
+                            color: appTheme.surfaceAlt
+                            border.color: appTheme.border
+                            border.width: 1
+                        }
                     }
 
                     CButton {
                         id: btnConnectDisconnect
                         text: "start"
-                        Layout.preferredWidth: 100
-                        height: 32
+                        Layout.preferredWidth: 110
+                        Layout.preferredHeight: appTheme.control.heightMedium
 
                         onClicked: {
                             serverConnectDisconnect(serverPort.text)
@@ -61,149 +86,101 @@ Item {
                         id: serverDetails
                         text: ""
                         Layout.fillWidth: true
-                        color: "#333"
+                        color: appTheme.textSecondary
+                        font.pixelSize: appTheme.fontSize.md
                         verticalAlignment: Text.AlignVCenter
+                        elide: Text.ElideRight
                     }
 
                     StatusIndicator {
                         id: indicator
                         width: 40
+                        height: 40
                     }
                 }
             }
 
-            // ---------------- SOCKET COUNT ----------------
+            // ================= CONNECTION COUNT =================
             Rectangle {
                 Layout.fillWidth: true
-                height: 70
-                radius: 8
-                color: "#ffffff"
-                border.color: "#d0d3d8"
+                Layout.preferredHeight: 70
+                radius: appTheme.radius.md
+                color: appTheme.surface
+                border.color: appTheme.border
+                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
+                    anchors.margins: appTheme.spacing.md
+                    spacing: appTheme.spacing.md
 
                     Text {
                         text: "Connections:"
+                        color: appTheme.textPrimary
                         font.bold: true
+                        font.pixelSize: appTheme.fontSize.md
                     }
 
                     Text {
                         id: connectionNumber
                         text: "0"
-                        color: "#222"
+                        color: appTheme.accent
+                        font.pixelSize: appTheme.fontSize.md
+                        font.bold: true
                     }
                 }
             }
 
-            // ---------------- SEND DATA ----------------
-            // Rectangle {
-            //     Layout.fillWidth: true
-            //     height: 90
-            //     radius: 8
-            //     color: "#ffffff"
-            //     border.color: "#d0d3d8"
-
-            //     RowLayout {
-            //         anchors.fill: parent
-            //         anchors.margins: 12
-            //         spacing: 12
-
-            //         TextEdit {
-            //             id: connectionSelector
-            //             text: "0"
-            //             Layout.preferredWidth: 80
-            //             height: 30
-            //         }
-
-            //         CButton {
-            //             id: btnSendData
-            //             text: "send data"
-            //             Layout.preferredWidth: 110
-            //             height: 32
-
-            //             onClicked: {
-            //                 sendDatato(connectionSelector.text)
-            //             }
-            //         }
-            //     }
-            // }
-
-            // ---------------- RECEIVED DATA ----------------
-            // Rectangle {
-            //     Layout.fillWidth: true
-            //     height: 90
-            //     radius: 8
-            //     color: "#ffffff"
-            //     border.color: "#d0d3d8"
-
-            //     RowLayout {
-            //         anchors.fill: parent
-            //         anchors.margins: 12
-            //         spacing: 12
-
-            //         Text {
-            //             text: "Data:"
-            //             font.bold: true
-            //         }
-
-            //         Text {
-            //             id: connectionRcvData
-            //             text: "-------------"
-            //         }
-
-            //         Text {
-            //             text: "Index:"
-            //             font.bold: true
-            //         }
-
-            //         Text {
-            //             id: connectionRcvIndex
-            //             text: "--"
-            //         }
-            //     }
-            // }
-
-            // ---------------- ENTITY LIST ----------------
+            // ================= ENTITY LIST =================
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: 8
-                color: "#ffffff"
-                border.color: "#d0d3d8"
+                radius: appTheme.radius.md
+                color: appTheme.surface
+                border.color: appTheme.border
+                border.width: 1
+                clip: true
 
                 ColumnLayout {
                     anchors.fill: parent
+                    spacing: 0
 
                     // ------ Header ------
                     Rectangle {
                         Layout.fillWidth: true
-                        height: 40
-                        color: "#2c3e50"
+                        Layout.preferredHeight: 40
+                        color: appTheme.surfaceAlt
+                        border.color: appTheme.border
+                        border.width: 0
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.margins: 10
+                            anchors.margins: appTheme.spacing.sm
+                            spacing: appTheme.spacing.sm
 
                             Text {
                                 text: "Display Name"
-                                color: "white"
+                                color: appTheme.textOnAccent
                                 font.bold: true
+                                font.pixelSize: appTheme.fontSize.sm
                                 Layout.preferredWidth: col1Width
+                                elide: Text.ElideRight
                             }
 
                             Text {
                                 text: "Username"
-                                color: "white"
+                                color: appTheme.textOnAccent
                                 font.bold: true
+                                font.pixelSize: appTheme.fontSize.sm
                                 Layout.preferredWidth: col2Width
+                                elide: Text.ElideRight
                             }
 
                             Text {
                                 text: "Operations"
-                                color: "white"
+                                color: appTheme.textOnAccent
                                 font.bold: true
+                                font.pixelSize: appTheme.fontSize.sm
                                 Layout.preferredWidth: col3Width
                             }
                         }
@@ -217,26 +194,30 @@ Item {
                         model: myBackend.entityModel
                         clip: true
                         delegate: entityDelegate
+                        boundsBehavior: Flickable.StopAtBounds
                     }
                 }
             }
 
+            // ================= ADD USER =================
             Rectangle {
                 Layout.fillWidth: true
-                height: 70
-                radius: 8
-                color: "#ffffff"
-                border.color: "#d0d3d8"
+                Layout.preferredHeight: 70
+                radius: appTheme.radius.md
+                color: appTheme.surface
+                border.color: appTheme.border
+                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+                    anchors.margins: appTheme.spacing.md
+                    spacing: appTheme.spacing.md
 
                     CButton {
                         id: btnAddUser
                         text: "+ Add New User"
-                        Layout.preferredWidth: 150
+                        Layout.preferredWidth: 160
+                        Layout.preferredHeight: appTheme.control.heightMedium
                         onClicked: {
                             userEditPopup.resetForm()
                             userEditPopup.open()
@@ -245,59 +226,87 @@ Item {
                 }
             }
 
-            // ---------------- DB STATUS ----------------
+            // ================= DB STATUS =================
             Rectangle {
                 Layout.fillWidth: true
-                height: 70
-                radius: 8
-                color: "#ffffff"
-                border.color: "#d0d3d8"
+                Layout.preferredHeight: 70
+                radius: appTheme.radius.md
+                color: appTheme.surface
+                border.color: appTheme.border
+                border.width: 1
 
                 RowLayout {
                     anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 12
+                    anchors.margins: appTheme.spacing.md
+                    spacing: appTheme.spacing.md
 
-                    Text { text: "Database Status:"; font.bold: true }
-                    Text { id: databaseStatus; text: "Connecting ..." }
+                    Text {
+                        text: "Database Status:"
+                        color: appTheme.textPrimary
+                        font.bold: true
+                        font.pixelSize: appTheme.fontSize.md
+                    }
+
+                    Text {
+                        id: databaseStatus
+                        text: "Connecting ..."
+                        color: appTheme.textSecondary
+                        font.pixelSize: appTheme.fontSize.md
+                        Layout.fillWidth: true
+                        elide: Text.ElideRight
+                    }
                 }
             }
         }
     }
 
-    // -------- Delegate --------
+    // ================= DELEGATE =================
     Component {
         id: entityDelegate
 
         Rectangle {
             width: ListView.view.width
             height: 60
-            radius: 6
+            radius: appTheme.radius.sm
             border.width: 1
-            border.color: "#ccc"
-            color: is_deleted ? "#ffcccc" :
-                   (is_active ? "#d6ffd6" : "#fff3c2")
+            border.color: appTheme.border
+            color: is_deleted ? appTheme.error :
+                   (is_active ? appTheme.hoverColor : appTheme.surfaceAlt)
+
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onEntered: parent.color = appTheme.hoverColor
+                onExited: {
+                    parent.color = is_deleted ? appTheme.error :
+                                   (is_active ? appTheme.hoverColor : appTheme.surfaceAlt)
+                }
+            }
 
             RowLayout {
                 anchors.fill: parent
-                anchors.margins: 10
-                spacing: 8
+                anchors.margins: appTheme.spacing.sm
+                spacing: appTheme.spacing.sm
 
                 Text {
                     text: display_name
+                    color: appTheme.textPrimary
+                    font.pixelSize: appTheme.fontSize.sm
                     Layout.preferredWidth: col1Width
                     elide: Text.ElideRight
                 }
 
                 Text {
                     text: username
+                    color: appTheme.textSecondary
+                    font.pixelSize: appTheme.fontSize.sm
                     Layout.preferredWidth: col2Width
                     elide: Text.ElideRight
                 }
 
                 RowLayout {
                     Layout.preferredWidth: col3Width
-                    spacing: 8
+                    spacing: appTheme.spacing.sm
 
                     IconButton {
                         text: is_deleted ? "↺" : "✖"
@@ -326,24 +335,24 @@ Item {
         }
     }
 
+    // ================= POPUP =================
     Popup {
         id: userEditPopup
         modal: true
         focus: true
-        width: 350
-        height: 320
+        width: 380
+        height: 340
 
-
-        x: (parent.width - width) / 2
-        y: (parent.height - height) / 2
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
 
         background: Rectangle {
-            radius: 10
-            color: "white"
-            border.color: "#aaa"
+            radius: appTheme.radius.lg
+            color: appTheme.surface
+            border.color: appTheme.border
+            border.width: 1
         }
 
-        // --------- function for filling data when editing ---------
         function setUserValues(id, display, username, password) {
             entityId = id
             tfDisplayName.text = display
@@ -351,7 +360,6 @@ Item {
             tfPassword.text = password
         }
 
-        // --------- function to reset popup (for creating new user) ---------
         function resetForm() {
             entityId = 0
             tfDisplayName.text = ""
@@ -361,29 +369,45 @@ Item {
 
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 14
+            anchors.margins: appTheme.spacing.lg
+            spacing: appTheme.spacing.md
 
-            // ----- Title -----
             Text {
                 text: entityId === 0 ? "Create New User" : "Edit User"
-                font.pixelSize: 20
+                font.pixelSize: appTheme.fontSize.xl
                 font.bold: true
-                color: "#2c3e50"
+                color: appTheme.textPrimary
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            // ----- Form -----
             TextField {
                 id: tfDisplayName
                 placeholderText: "Display Name"
                 Layout.fillWidth: true
+                Layout.preferredHeight: appTheme.control.heightMedium
+                color: appTheme.textPrimary
+                placeholderTextColor: appTheme.textSecondary
+                background: Rectangle {
+                    radius: appTheme.radius.sm
+                    color: appTheme.surfaceAlt
+                    border.color: appTheme.border
+                    border.width: 1
+                }
             }
 
             TextField {
                 id: tfUsername
                 placeholderText: "Username"
                 Layout.fillWidth: true
+                Layout.preferredHeight: appTheme.control.heightMedium
+                color: appTheme.textPrimary
+                placeholderTextColor: appTheme.textSecondary
+                background: Rectangle {
+                    radius: appTheme.radius.sm
+                    color: appTheme.surfaceAlt
+                    border.color: appTheme.border
+                    border.width: 1
+                }
             }
 
             TextField {
@@ -391,22 +415,32 @@ Item {
                 placeholderText: "Password"
                 echoMode: TextInput.Password
                 Layout.fillWidth: true
+                Layout.preferredHeight: appTheme.control.heightMedium
+                color: appTheme.textPrimary
+                placeholderTextColor: appTheme.textSecondary
+                background: Rectangle {
+                    radius: appTheme.radius.sm
+                    color: appTheme.surfaceAlt
+                    border.color: appTheme.border
+                    border.width: 1
+                }
             }
 
-            // ----- Buttons -----
             RowLayout {
                 Layout.fillWidth: true
-                spacing: 12
+                spacing: appTheme.spacing.md
 
                 CButton {
                     text: "Cancel"
                     Layout.fillWidth: true
+                    Layout.preferredHeight: appTheme.control.heightMedium
                     onClicked: userEditPopup.close()
                 }
 
                 CButton {
                     text: entityId === 0 ? "Create" : "Save"
                     Layout.fillWidth: true
+                    Layout.preferredHeight: appTheme.control.heightMedium
 
                     onClicked: {
                         if (entityId === 0) {
@@ -431,7 +465,7 @@ Item {
         }
     }
 
-    // ---------------- INIT ----------------
+    // ================= INIT =================
     Component.onCompleted: {
         col1Width = (width - 20) / 3
         col2Width = (width - 20) / 3
@@ -445,14 +479,14 @@ Item {
         qmlLoaded()
     }
 
-    // ---------------- SIGNAL CONNECTIONS ----------------
+    // ================= SIGNAL CONNECTIONS =================
     Connections {
         target: myBackend
 
         function onDataBaseState(dbState, msg) {
-            databaseStatus.text = dbState ?
-                                  "Connected Successfully." :
-                                  "Error: " + msg
+            databaseStatus.text = dbState
+                    ? "Connected Successfully."
+                    : "Error: " + msg
         }
 
         function onServerStateChanged(state, msg) {
@@ -462,12 +496,17 @@ Item {
         }
 
         function onSocketsCount(count) {
-            //connectionNumber.text = count
+            connectionNumber.text = count
         }
 
         function onDataFromSocket(data, index) {
-            //connectionRcvData.text = data
-            //connectionRcvIndex.text = index
+            // Reserved
+        }
+
+        function onShowToastMessage(noError,_msg){
+            if(_msg !== qsTr("")){
+                toastMessage.showMessage(noError,_msg)
+            }
         }
     }
 }

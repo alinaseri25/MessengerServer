@@ -3,6 +3,7 @@
 #include <QQuickView>
 #include <QQmlContext>
 #include <QDebug>
+#include <QQuickStyle>
 
 //----- this part for debug
 #include <QFile>
@@ -19,8 +20,9 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const Q
 
 int main(int argc, char *argv[])
 {
+    QQuickStyle::setStyle("Fusion");
     file.setFileName(QString("log %1.txt").arg(QDateTime::currentDateTime().toMSecsSinceEpoch()));
-    qInstallMessageHandler(myMessageHandler);
+    //qInstallMessageHandler(myMessageHandler);
 
     QGuiApplication app(argc, argv);
 
@@ -39,24 +41,17 @@ int main(int argc, char *argv[])
 
     backend *myBackend = new backend(nullptr);
 
-    QQuickView viewer;
+    QQmlApplicationEngine engine;
 
-    viewer.rootContext()->setContextProperty("myBackend",myBackend);
+    engine.rootContext()->setContextProperty("myBackend",myBackend);
 
-#ifdef Q_OS_WIN
-    QString extraImportPath(QStringLiteral("%1/../../../../%2"));
-#else
-    QString extraImportPath(QStringLiteral("%1/../../../%2"));
-#endif
-    viewer.engine()->addImportPath(extraImportPath.arg(QGuiApplication::applicationDirPath(),
-                                                       QString::fromLatin1("qml")));
-    QObject::connect(viewer.engine(), &QQmlEngine::quit, &viewer, &QWindow::close);
-
-    viewer.setTitle(QStringLiteral("messenger Server"));
-    viewer.setSource(QUrl("qrc:/Main.qml"));
-    viewer.setResizeMode(QQuickView::SizeRootObjectToView);
-
-    viewer.show();
+    QObject::connect(
+        &engine,
+        &QQmlApplicationEngine::objectCreationFailed,
+        &app,
+        []() { QCoreApplication::exit(-1); },
+        Qt::QueuedConnection);
+    engine.loadFromModule("MessengerServer", "Main");
 
     return app.exec();
 }

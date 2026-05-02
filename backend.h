@@ -21,14 +21,15 @@ private:
     EntityModel m_entityModel;
 
 signals:
-    void serverStateChanged(bool state,QString msg);
+    void showToastMessage(bool noError,const QString &_msg);
+    void serverStateChanged(bool state,const QString &msg);
     void socketsCount(int count);
-    void dataFromSocket(QString data,int index);
+    void dataFromSocket(const QString &data,int index);
     void startServer(QHostAddress _address,quint16 _port);
     void stopServer(void);
     void getServerState(void);
-    void sendDataTo(QString data, quint64 listNumber);
-    void dataBaseState(bool dbState, QString msg);
+    void sendDataTo(const QString &data, quint64 listNumber);
+    void dataBaseState(bool dbState, const QString &msg);
     void loadEntitiesPage(int limit, int offset);
     void setDeleted(int entityId,bool isDeleted);
     void setActivate(int entityId, bool isActive);
