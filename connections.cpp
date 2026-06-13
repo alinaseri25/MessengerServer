@@ -36,7 +36,10 @@ Connections::Connections(QSslSocket *_tcpSocket, quint64 _socketId, QSqlDatabase
 
 Connections::~Connections()
 {
-    foreach (Equipment *eqp, equipments.values()) {
+    //foreach (Equipment *eqp, equipments.values()) {
+    for (auto it = equipments.cbegin(); it != equipments.cend(); ++it)
+    {
+        Equipment *eqp = it.value();
         if(eqp != nullptr)
         {
             eqp->disconnectEquipment();

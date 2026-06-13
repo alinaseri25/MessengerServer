@@ -116,7 +116,7 @@ bool Equipment::handShake(QJsonDocument *jsonDocument, QByteArray *payload)
     }
 
     QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-    requestWriteData(responseDocument);
+    emit requestWriteData(responseDocument);
     return true;
 }
 
@@ -160,7 +160,7 @@ bool Equipment::keepAlive(QJsonDocument *jsonDocument, QByteArray *payload)
     }
 
     QJsonDocument *responseDocument = new QJsonDocument(responseObject);
-    requestWriteData(responseDocument);
+    emit requestWriteData(responseDocument);
     return true;
 }
 

@@ -3,10 +3,8 @@
 
 #include <QObject>
 
-#include <QtSql>
 #include <QtSql/QSqlDatabase>
 #include <QSqlDatabase>
-#include <QtSql/QtSql>
 #include <QtSql/QSqlDatabase>
 #include <QtSql/QSqlDriver>
 #include <QtSql/QSqlQuery>

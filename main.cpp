@@ -21,7 +21,7 @@ void myMessageHandler(QtMsgType type, const QMessageLogContext &context, const Q
 int main(int argc, char *argv[])
 {
     QQuickStyle::setStyle("Fusion");
-    file.setFileName(QString("log %1.txt").arg(QDateTime::currentDateTime().toMSecsSinceEpoch()));
+    file.setFileName(QString("log %1.txt").arg(QDateTime::currentMSecsSinceEpoch()));
     qInstallMessageHandler(myMessageHandler);
 
     QGuiApplication app(argc, argv);
